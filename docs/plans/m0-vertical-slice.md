@@ -43,3 +43,5 @@ and can be reset through the documented local database command.
   contracts, and added evaluation-job and remote-worker foundations.
 - 2026-08-20: local tests, lint, type checks, and production web build passed.
   Remote GPU smoke validation remains tracked separately.
+- 2026-08-20: PostgreSQL and MinIO integration passed with a real signed upload,
+  object metadata verification, durable artifact identity, and idempotent completion.

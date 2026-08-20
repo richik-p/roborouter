@@ -200,17 +200,23 @@ make web
 Open [http://localhost:3000](http://localhost:3000). Run the complete local
 verification suite with `make check`.
 
+With Docker running, verify the real PostgreSQL and MinIO path—including a signed
+artifact upload and idempotent completion replay—with:
+
+```bash
+make integration-local
+```
+
 The NVIDIA worker setup and remaining provenance pins are documented in
 [`services/eval-worker/README.md`](services/eval-worker/README.md) and
 [`docs/plans/remote-evaluation.md`](docs/plans/remote-evaluation.md).
 
 ## Known validation boundary
 
-This workstation has no available Docker daemon, NVIDIA worker, or physical robot.
-The deterministic fixture path and local SQLite verification pass here; PostgreSQL,
-MinIO, and the generated Compose configuration are present but must be exercised on
-a Docker-capable host. The remote harness, model snapshots, and LIBERO image are
-pinned, but the first CUDA smoke episode has not yet been executed.
+The deterministic fixture path and the real local PostgreSQL/MinIO integration have
+been verified on this workstation. There is no NVIDIA worker or physical robot. The
+remote harness, model snapshots, and LIBERO image are pinned, but the first CUDA smoke
+episode has not yet been executed.
 
 Research snapshot: **2026-08-20**. Robotics infrastructure is moving rapidly;
 current claims should be reverified before major dependency or product decisions.

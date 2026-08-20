@@ -14,7 +14,7 @@ This is the local issue source until a GitHub remote exists.
 - [x] M2-01 evaluation orchestration
 - [x] M2-02 outbound remote worker implementation
 - [ ] M2-03 π₀.₅/LIBERO adapter — remote execution pending
-- [ ] M2-04 artifact and Rollout persistence — PostgreSQL/MinIO integration run pending
+- [x] M2-04 artifact and Rollout persistence
 - [x] M2-05 evaluation UX
 - [x] M3-01 MolmoAct2 runner configuration
 - [ ] M3-02 comparable evaluation sets — contracts/UI complete; matched real runs pending

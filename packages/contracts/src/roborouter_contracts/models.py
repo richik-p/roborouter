@@ -246,7 +246,7 @@ class Artifact(Contract):
     ]
     uri: str
     media_type: str
-    sha256: str
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     size_bytes: int = Field(ge=0)
 
 

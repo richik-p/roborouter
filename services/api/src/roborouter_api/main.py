@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -11,6 +12,7 @@ from typing import Annotated, Literal
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
@@ -29,11 +31,13 @@ from roborouter_contracts import (
     WorkerCapabilities,
 )
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .compatibility import RULESET_REVISION, evaluate
 from .database import get_session
 from .db_models import (
+    ArtifactRow,
     CompatibilityRow,
     EnvironmentRow,
     EvaluationJobRow,
@@ -157,6 +161,52 @@ def _job(row: EvaluationJobRow) -> EvaluationJob:
 
 def _canonical_digest(value: object) -> bytes:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).digest()
+
+
+def _s3_client():
+    return boto3.client(
+        "s3",
+        endpoint_url=settings.s3_endpoint_url,
+        aws_access_key_id=settings.s3_access_key,
+        aws_secret_access_key=settings.s3_secret_key,
+        region_name="us-east-1",
+        config=Config(signature_version="s3v4"),
+    )
+
+
+def _artifact(row: ArtifactRow) -> Artifact:
+    return Artifact(
+        id=row.artifact_id,
+        kind=row.kind,
+        uri=row.uri,
+        media_type=row.media_type,
+        sha256=row.sha256,
+        size_bytes=row.size_bytes,
+    )
+
+
+async def _verify_uploaded_artifact(row: ArtifactRow) -> None:
+    if not settings.s3_verify_uploads:
+        return
+    try:
+        result = await asyncio.to_thread(
+            _s3_client().head_object,
+            Bucket=settings.s3_bucket,
+            Key=row.object_key,
+        )
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code in {"404", "NoSuchKey", "NotFound"}:
+            raise HTTPException(status_code=422, detail=f"artifact {row.artifact_id} was not uploaded") from exc
+        raise HTTPException(status_code=503, detail="artifact store is unavailable") from exc
+    except BotoCoreError as exc:
+        raise HTTPException(status_code=503, detail="artifact store is unavailable") from exc
+    if (
+        result.get("ContentLength") != row.size_bytes
+        or result.get("ContentType", "").split(";", 1)[0] != row.media_type
+        or result.get("Metadata", {}).get("sha256") != row.sha256
+    ):
+        raise HTTPException(status_code=422, detail=f"artifact {row.artifact_id} metadata does not match grant")
 
 
 def _require_worker(authorization: Annotated[str | None, Header()] = None) -> None:
@@ -450,33 +500,47 @@ async def presign_artifact(
     if row.worker_id != body.worker_id or row.state not in {"CLAIMED", "RUNNING"}:
         raise HTTPException(status_code=409, detail="worker does not own this evaluation")
     safe_filename = re.sub(r"[^a-zA-Z0-9._-]", "_", body.filename)
-    artifact_id = f"artifact-{uuid.uuid4()}"
+    identity = "|".join([job_id, body.kind, safe_filename, body.media_type, body.sha256, str(body.size_bytes)])
+    artifact_id = f"artifact-{hashlib.sha256(identity.encode()).hexdigest()[:32]}"
     key = f"jobs/{job_id}/{artifact_id}/{safe_filename}"
-    client = boto3.client(
-        "s3",
-        endpoint_url=settings.s3_endpoint_url,
-        aws_access_key_id=settings.s3_access_key,
-        aws_secret_access_key=settings.s3_secret_key,
-        region_name="us-east-1",
-        config=Config(signature_version="s3v4"),
-    )
-    upload_url = client.generate_presigned_url(
+    artifact_row = await session.get(ArtifactRow, artifact_id)
+    if artifact_row is None:
+        artifact_row = ArtifactRow(
+            artifact_id=artifact_id,
+            evaluation_job_id=job_id,
+            kind=body.kind,
+            filename=safe_filename,
+            object_key=key,
+            uri=f"s3://{settings.s3_bucket}/{key}",
+            media_type=body.media_type,
+            sha256=body.sha256,
+            size_bytes=body.size_bytes,
+            state="GRANTED",
+            created_at=datetime.now(UTC),
+            attached_at=None,
+        )
+        session.add(artifact_row)
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            artifact_row = await session.get(ArtifactRow, artifact_id)
+            if artifact_row is None:
+                raise HTTPException(status_code=409, detail="artifact grant conflict") from None
+    upload_url = _s3_client().generate_presigned_url(
         "put_object",
-        Params={"Bucket": settings.s3_bucket, "Key": key, "ContentType": body.media_type},
+        Params={
+            "Bucket": settings.s3_bucket,
+            "Key": key,
+            "ContentType": body.media_type,
+            "Metadata": {"sha256": body.sha256},
+        },
         ExpiresIn=900,
     )
-    artifact = Artifact(
-        id=artifact_id,
-        kind=body.kind,
-        uri=f"s3://{settings.s3_bucket}/{key}",
-        media_type=body.media_type,
-        sha256=body.sha256,
-        size_bytes=body.size_bytes,
-    )
     return ArtifactUploadGrant(
-        artifact=artifact,
+        artifact=_artifact(artifact_row),
         upload_url=upload_url,
-        required_headers={"Content-Type": body.media_type},
+        required_headers={"Content-Type": body.media_type, "x-amz-meta-sha256": body.sha256},
     )
 
 
@@ -497,6 +561,22 @@ async def complete_job(job_id: str, body: WorkerCompletion, _: WorkerAuth, sessi
         return _job(row)
     if row.worker_id != body.worker_id or row.state not in {"CLAIMED", "RUNNING"}:
         raise HTTPException(status_code=409, detail="worker does not own this evaluation")
+    artifact_rows: dict[str, ArtifactRow] = {}
+    for rollout in body.rollouts:
+        for item in rollout.artifacts:
+            artifact_row = await session.get(ArtifactRow, item.id)
+            if (
+                artifact_row is None
+                or artifact_row.evaluation_job_id != job_id
+                or _canonical_digest(_artifact(artifact_row).model_dump(mode="json"))
+                != _canonical_digest(item.model_dump(mode="json"))
+            ):
+                raise HTTPException(status_code=422, detail=f"artifact {item.id} was not granted for this evaluation")
+            artifact_rows[item.id] = artifact_row
+    if not artifact_rows:
+        raise HTTPException(status_code=422, detail="evaluation completion requires at least one granted artifact")
+    for artifact_row in artifact_rows.values():
+        await _verify_uploaded_artifact(artifact_row)
     for rollout in body.rollouts:
         if rollout.evaluation_job_id != job_id:
             raise HTTPException(status_code=422, detail="rollout job identity mismatch")
@@ -515,6 +595,9 @@ async def complete_job(job_id: str, body: WorkerCompletion, _: WorkerAuth, sessi
     row.state = EvaluationState.SUCCEEDED.value
     row.updated_at = datetime.now(UTC)
     row.lease_expires_at = None
+    for artifact_row in artifact_rows.values():
+        artifact_row.state = "ATTACHED"
+        artifact_row.attached_at = row.updated_at
     await session.commit()
     return _job(row)
 

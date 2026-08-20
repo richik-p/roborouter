@@ -1,4 +1,4 @@
-.PHONY: dev api web worker install generate test lint typecheck docs-check check db-up db-down seed
+.PHONY: dev api web worker install generate test lint typecheck docs-check check integration-local db-up db-down seed
 
 install:
 	uv sync --all-packages --dev
@@ -37,6 +37,12 @@ docs-check:
 
 check: generate test lint typecheck docs-check
 	npm run build
+
+integration-local:
+	docker compose -f infra/compose.yml up -d --wait postgres minio
+	docker compose -f infra/compose.yml run --rm minio-init
+	uv run alembic upgrade head
+	uv run python scripts/verify_local_services.py
 
 db-up:
 	docker compose -f infra/compose.yml up -d

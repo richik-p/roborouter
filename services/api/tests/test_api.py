@@ -72,6 +72,22 @@ def test_catalog_compatibility_rollout_and_job_flow() -> None:
         assert grant.status_code == 200
         assert grant.json()["artifact"]["uri"].startswith("s3://roborouter-artifacts/jobs/")
         assert "X-Amz-Signature" in grant.json()["upload_url"]
+        assert grant.json()["required_headers"]["x-amz-meta-sha256"] == "a" * 64
+
+        repeated_grant = client.post(
+            f"/private/workers/jobs/{created.json()['id']}/artifacts/presign",
+            headers={"Authorization": "Bearer test-worker-token"},
+            json={
+                "worker_id": "test-gpu",
+                "kind": "log",
+                "filename": "result.log",
+                "media_type": "text/plain",
+                "sha256": "a" * 64,
+                "size_bytes": 12,
+            },
+        )
+        assert repeated_grant.status_code == 200
+        assert repeated_grant.json()["artifact"] == grant.json()["artifact"]
 
         heartbeat = client.post(
             f"/private/workers/jobs/{created.json()['id']}/heartbeat",
@@ -90,6 +106,14 @@ def test_catalog_compatibility_rollout_and_job_flow() -> None:
                 "evidence_note": "Executed by the test evaluation worker.",
             }
         )
+        ungranted_artifact = {**grant.json()["artifact"], "id": "artifact-not-granted"}
+        rejected = client.post(
+            f"/private/workers/jobs/{created.json()['id']}/complete",
+            headers={"Authorization": "Bearer test-worker-token"},
+            json={"worker_id": "test-gpu", "rollouts": [{**rollout_payload, "artifacts": [ungranted_artifact]}]},
+        )
+        assert rejected.status_code == 422
+
         completion_payload = {"worker_id": "test-gpu", "rollouts": [rollout_payload]}
         completed = client.post(
             f"/private/workers/jobs/{created.json()['id']}/complete",
@@ -120,3 +144,28 @@ def test_worker_token_is_required() -> None:
             },
         )
         assert response.status_code == 401
+
+
+def test_queued_evaluation_can_be_canceled() -> None:
+    with TestClient(app) as client:
+        created = client.post(
+            "/v0/evaluations",
+            json={
+                "policy_id": "pi05-libero",
+                "policy_revision": "lerobot-pi05-libero-finetuned",
+                "environment_id": "vla-eval-libero-object",
+                "environment_revision": "vla-eval-0.4.0-lerobot-0.6.0-libero-2a4566009395",
+                "task_profile_id": "libero-object-pick-place",
+                "task_revision": "2026-08-20.1",
+                "seeds": [11],
+            },
+        )
+        assert created.status_code == 201
+
+        canceled = client.post(f"/v0/evaluations/{created.json()['id']}/cancel")
+        assert canceled.status_code == 200
+        assert canceled.json()["state"] == "CANCELED"
+
+        fetched = client.get(f"/v0/evaluations/{created.json()['id']}")
+        assert fetched.status_code == 200
+        assert fetched.json()["state"] == "CANCELED"

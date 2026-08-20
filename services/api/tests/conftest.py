@@ -8,3 +8,4 @@ TEST_DB.unlink(missing_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB}"
 os.environ["WORKER_TOKEN"] = "test-worker-token"
 os.environ["AUTO_CREATE_SCHEMA"] = "true"
+os.environ["S3_VERIFY_UPLOADS"] = "false"

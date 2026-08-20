@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 import mimetypes
+from contextlib import suppress
 from pathlib import Path
 
 import httpx
@@ -98,6 +99,15 @@ async def maintain_lease(
             continue
 
 
+async def evaluation_was_canceled(client: httpx.AsyncClient, job: EvaluationJob) -> bool:
+    try:
+        response = await client.get(f"/v0/evaluations/{job.id}")
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return False
+    return response.json().get("state") == "CANCELED"
+
+
 async def work_forever(settings: WorkerSettings) -> None:
     headers = {"Authorization": f"Bearer {settings.worker_token}"}
     capabilities = WorkerCapabilities(
@@ -123,11 +133,19 @@ async def work_forever(settings: WorkerSettings) -> None:
             logger.info("claimed %s", job.id)
             lease_stop = asyncio.Event()
             lease_task = asyncio.create_task(maintain_lease(client, settings, job, lease_stop))
+            evaluation_task = asyncio.create_task(adapter.run(job))
             try:
-                rollouts = await adapter.run(job)
+                done, _ = await asyncio.wait(
+                    {evaluation_task, lease_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if lease_task in done:
+                    lease_task.result()
+                    raise HarnessError("evaluation lease ended before the harness completed")
+                rollouts = evaluation_task.result()
+                artifacts = await upload_artifacts(client, settings, adapter, job)
                 if lease_task.done():
                     lease_task.result()
-                artifacts = await upload_artifacts(client, settings, adapter, job)
                 rollouts = [rollout.model_copy(update={"artifacts": artifacts}) for rollout in rollouts]
                 result = await client.post(
                     f"/private/workers/jobs/{job.id}/complete",
@@ -140,6 +158,13 @@ async def work_forever(settings: WorkerSettings) -> None:
                 logger.info("completed %s", job.id)
             except (HarnessError, httpx.HTTPError, OSError) as exc:
                 logger.exception("evaluation %s failed", job.id)
+                if not evaluation_task.done():
+                    evaluation_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await evaluation_task
+                if await evaluation_was_canceled(client, job):
+                    logger.info("evaluation %s was canceled by the control plane", job.id)
+                    continue
                 failure = await client.post(
                     f"/private/workers/jobs/{job.id}/fail",
                     json={

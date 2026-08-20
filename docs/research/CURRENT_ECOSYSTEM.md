@@ -1,11 +1,40 @@
 # Current Robotics Infrastructure — Verified Snapshot
 
-**Checked:** 2026-08-19  
+**Checked:** 2026-08-20
 **Purpose:** identify which layers RoboRouter should reuse rather than rebuild.
 
 This file should be rechecked whenever a major upstream release changes integration strategy.
 
-## 1. XPolicyLab — policy/evaluation layer
+## 1. AllenAI VLA evaluation harness — first execution boundary
+
+### Verified
+
+Release `v0.4.0` documents a LeRobot model-server bridge, structured benchmark
+results, and recordings. Its published integrations include a reproduced
+`lerobot/pi05_libero_finetuned` result on LIBERO, giving RoboRouter a bounded first
+path that does not require a new universal runtime protocol.
+
+The `v0.4.0` tag resolves to commit
+`2680ab2fafe981c2dba63c6c1a4e7bb4415dbb56`. The Hugging Face checkpoint alias now
+resolves to `lerobot/pi05_libero_finetuned_v044` at
+`8e174154ef5f6c60a8da12ae99c303d8963138c1`; RoboRouter records and enforces that
+snapshot rather than loading mutable `main`.
+
+### Product implication
+
+Pin the harness release, LeRobot version, policy and benchmark configuration
+revisions, and the exact container digest used by the worker. Preserve upstream
+action semantics; the RoboRouter adapter only maps job identity and result artifacts.
+
+### Source
+
+- https://github.com/allenai/vla-evaluation-harness/releases/tag/v0.4.0
+- https://huggingface.co/api/models/lerobot/pi05_libero_finetuned
+- https://huggingface.co/api/models/allenai/MolmoAct2-LIBERO
+
+---
+
+## 2. XPolicyLab — policy/evaluation layer
 
 ### Verified
 
@@ -33,7 +62,7 @@ Use XPolicyLab as an initial policy-side dependency where it is sufficiently sta
 
 ---
 
-## 2. RoboDojo — evaluation infrastructure
+## 3. RoboDojo — evaluation infrastructure
 
 ### Verified
 
@@ -59,7 +88,7 @@ Do not make RoboDojo the only simulator/evaluation backend. The RoboRouter data 
 
 ---
 
-## 3. Hugging Face LeRobot — robot/policy/data ecosystem
+## 4. Hugging Face LeRobot — robot/policy/data ecosystem
 
 ### Verified
 
@@ -81,7 +110,7 @@ RoboRouter's value is not to replace LeRobot. It is to make policy/robot compati
 
 ---
 
-## 4. Physical Intelligence openpi — remote inference proof
+## 5. Physical Intelligence openpi — remote inference proof
 
 ### Verified
 
@@ -101,7 +130,7 @@ The important product layer is session identity, compatibility, observability, a
 
 ---
 
-## 5. NVIDIA GR00T N1.7
+## 6. NVIDIA GR00T N1.7
 
 ### Verified
 
@@ -121,7 +150,7 @@ GR00T is an important launch-catalog/model-family candidate, but a base “cross
 
 ---
 
-## 6. ROS 2 / ros2_control — general robot integration seam
+## 7. ROS 2 / ros2_control — general robot integration seam
 
 ### Verified
 
@@ -140,7 +169,7 @@ For many research/industrial robots, RoboRouter should integrate at an existing 
 
 ---
 
-## 7. PX4 + ROS 2 — aerial seam
+## 8. PX4 + ROS 2 — aerial seam
 
 ### Verified
 
@@ -161,7 +190,7 @@ Start with simulation/SITL before physical UAV actuation.
 
 ---
 
-## 8. AeroVLA — evidence that the catalog must extend beyond arms
+## 9. AeroVLA — evidence that the catalog must extend beyond arms
 
 ### Verified
 
@@ -179,7 +208,7 @@ Even if the first physical pilot is an arm, the website/evaluation model should 
 
 ---
 
-## 9. Codex repository handoff
+## 10. Codex repository handoff
 
 ### Verified
 
@@ -203,7 +232,7 @@ The useful abstraction boundary is now clearer:
 ```text
 RoboRouter control plane
         ↓
-PolicyAdapter (XPolicyLab / LeRobot / native)
+PolicyAdapter (vla-eval / XPolicyLab / LeRobot / native)
         ↓
 semantic policy output
         ↓

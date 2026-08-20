@@ -1,0 +1,11 @@
+id: uav-language-navigation
+revision: "2026-08-20.1"
+name: Language-conditioned UAV navigation
+domain: aerial_navigation
+task_family: language_goal_navigation
+language_conditioned: true
+requirements: [obstacle_avoidance, goal_navigation]
+environment:
+  simulator: PX4_SITL
+max_episode_s: 180
+

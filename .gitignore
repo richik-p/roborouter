@@ -4,6 +4,7 @@
 !.env.example
 node_modules/
 .next/
+*.tsbuildinfo
 dist/
 coverage/
 .venv/
@@ -16,5 +17,4 @@ __pycache__/
 .minio/
 postgres-data/
 artifacts/
-openapi.json
-
+/openapi.json

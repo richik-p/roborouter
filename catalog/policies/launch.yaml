@@ -1,0 +1,212 @@
+policies:
+  - id: pi05-libero
+    revision: lerobot-pi05-libero-finetuned
+    name: π₀.₅ LIBERO
+    family: pi0.5
+    description: LeRobot π₀.₅ checkpoint fine-tuned for the four LIBERO suites.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://huggingface.co/lerobot/pi05_libero_finetuned_v044
+      checkpoint: lerobot/pi05_libero_finetuned_v044
+      checkpoint_revision: 8e174154ef5f6c60a8da12ae99c303d8963138c1
+    runtime:
+      adapter: vla_eval_lerobot
+      framework: lerobot
+      framework_revision: 0.6.0
+      engine_revision: vla-eval-0.4.0
+      config: configs/model_servers/lerobot/pi05_libero.yaml
+    observations:
+      sensor_types: [vision.rgb, proprioception.ee_gripper]
+      cameras: [scene, wrist]
+      state_schema: libero.ee_gripper.v1
+      language_prompt: true
+    actions:
+      schema: manipulation.ee_delta_pose.v1
+      dimensions: 7
+      horizon: 10
+      expected_rate_hz: 20
+      frame: robot_base
+      normalization_id: lerobot/pi05_libero_finetuned:stats
+    availability: {weights: open, code: open, license: gemma}
+    evidence:
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/main/docs/reproductions/lerobot.md
+        checked_at: 2026-08-20
+        description: Upstream harness reports 100/100 on LIBERO Object.
+        exact_robot_match: true
+        exact_runtime_match: true
+    tags: [language-conditioned, manipulation, libero, executable]
+
+  - id: molmoact2-libero
+    revision: allenai-molmoact2-libero
+    name: MolmoAct2 LIBERO
+    family: MolmoAct2
+    description: AllenAI MolmoAct2 checkpoint evaluated on LIBERO Goal.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://huggingface.co/allenai/MolmoAct2-LIBERO
+      checkpoint: allenai/MolmoAct2-LIBERO
+      checkpoint_revision: 0d24a92bd1faf321ef497c3bbd5681af97c65aa2
+    runtime:
+      adapter: vla_eval_lerobot
+      framework: lerobot
+      framework_revision: 0.6.0
+      engine_revision: vla-eval-0.4.0
+      config: configs/model_servers/lerobot/molmoact2_libero.yaml
+    observations:
+      sensor_types: [vision.rgb, proprioception.ee_gripper]
+      cameras: [scene, wrist]
+      state_schema: libero.ee_gripper.v1
+      language_prompt: true
+    actions:
+      schema: manipulation.ee_delta_pose.v1
+      dimensions: 7
+      expected_rate_hz: 20
+      frame: robot_base
+      normalization_id: allenai/MolmoAct2-LIBERO:libero
+    availability: {weights: open, code: open, license: not-declared-on-model-card}
+    evidence:
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/main/docs/reproductions/lerobot.md
+        checked_at: 2026-08-20
+        description: Upstream harness reports 97% on LIBERO Goal.
+        exact_robot_match: true
+        exact_runtime_match: true
+    tags: [language-conditioned, manipulation, libero, executable]
+
+  - &research_manip
+    id: openvla
+    revision: research-2026-08-20
+    name: OpenVLA
+    family: OpenVLA
+    description: Open vision-language-action baseline; exact robot checkpoint required.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
+    source: {repository: https://github.com/openvla/openvla, checkpoint: null, checkpoint_revision: null}
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [scene], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - {level: RESEARCH_ONLY, source: https://github.com/openvla/openvla, checked_at: 2026-08-20, description: Family-level upstream evidence only., exact_robot_match: false, exact_runtime_match: false}
+    tags: [language-conditioned, manipulation, research]
+
+  - <<: *research_manip
+    id: openvla-oft
+    name: OpenVLA-OFT
+    family: OpenVLA-OFT
+    source: {repository: https://github.com/moojink/openvla-oft, checkpoint: null, checkpoint_revision: null}
+    evidence:
+      - {level: RESEARCH_ONLY, source: https://github.com/moojink/openvla-oft, checked_at: 2026-08-20, description: Family-level upstream evidence only., exact_robot_match: false, exact_runtime_match: false}
+  - <<: *research_manip
+    id: groot-n17
+    name: GR00T N1.7
+    family: GR00T N1.7
+    source: {repository: https://github.com/NVIDIA/Isaac-GR00T, checkpoint: null, checkpoint_revision: null}
+    availability: {weights: gated, code: open, license: apache-2.0}
+    evidence:
+      - {level: RESEARCH_ONLY, source: https://github.com/NVIDIA/Isaac-GR00T, checked_at: 2026-08-20, description: Early-access family; post-training is embodiment-specific., exact_robot_match: false, exact_runtime_match: false}
+  - <<: *research_manip
+    id: x-vla
+    name: X-VLA
+    family: X-VLA
+    source: {repository: https://github.com/2toinf/X-VLA, checkpoint: null, checkpoint_revision: null}
+    evidence:
+      - {level: RESEARCH_ONLY, source: https://github.com/2toinf/X-VLA, checked_at: 2026-08-20, description: Cross-embodiment family evidence., exact_robot_match: false, exact_runtime_match: false}
+  - <<: *research_manip
+    id: smolvla
+    name: SmolVLA
+    family: SmolVLA
+    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: act
+    name: ACT
+    family: ACT
+    description: Action Chunking Transformer family; requires task-specific training.
+    source: {repository: https://github.com/tonyzhaozh/act, checkpoint: null, checkpoint_revision: null}
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: false}
+  - <<: *research_manip
+    id: diffusion-policy
+    name: Diffusion Policy
+    family: Diffusion Policy
+    source: {repository: https://github.com/real-stanford/diffusion_policy, checkpoint: null, checkpoint_revision: null}
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: false}
+  - <<: *research_manip
+    id: octo
+    name: Octo
+    family: Octo
+    source: {repository: https://github.com/octo-models/octo, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: cogact
+    name: CogACT
+    family: CogACT
+    source: {repository: https://github.com/microsoft/CogACT, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: db-cogact
+    name: DB-CogACT
+    family: DB-CogACT
+    source: {repository: https://github.com/dexmal/dexbotic, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: rdt
+    name: RDT
+    family: RDT
+    source: {repository: https://github.com/thu-ml/RoboticsDiffusionTransformer, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: robomamba
+    name: RoboMamba
+    family: RoboMamba
+    source: {repository: https://github.com/lmzpai/roboMamba, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: tinyvla
+    name: TinyVLA
+    family: TinyVLA
+    source: {repository: https://github.com/liyaxuanliyaxuan/TinyVLA, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: vla-jepa
+    name: VLA-JEPA
+    family: VLA-JEPA
+    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: lingbot-va
+    name: LingBot-VA
+    family: LingBot-VA
+    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: fastwam
+    name: FastWAM
+    family: FastWAM
+    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: aloha-act
+    name: ALOHA ACT
+    family: ACT
+    robot_classes: [manipulator.bimanual]
+    source: {repository: https://github.com/tonyzhaozh/aloha, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: dexgraspnet-policy
+    name: DexGraspNet policy family
+    family: DexGraspNet
+    robot_classes: [dexterous_hand]
+    task_families: [dexterous_grasping]
+    source: {repository: https://github.com/PKU-EPIC/DexGraspNet, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: navila
+    name: NaVILA
+    family: NaVILA
+    robot_classes: [mobile.wheeled]
+    task_families: [language_goal_navigation]
+    source: {repository: https://github.com/AnjieCheng/NaVILA, checkpoint: null, checkpoint_revision: null}
+  - <<: *research_manip
+    id: aerovla
+    name: AeroVLA
+    family: AeroVLA
+    description: Research policy for vision-language UAV navigation.
+    robot_classes: [aerial.multirotor]
+    task_families: [language_goal_navigation]
+    source: {repository: https://github.com/XuPeng23/AeroVLA, checkpoint: null, checkpoint_revision: null}
+    observations: {sensor_types: [vision.rgb, navigation.local_position], cameras: [front], state_schema: null, language_prompt: true}
+    evidence:
+      - {level: RESEARCH_ONLY, source: https://github.com/XuPeng23/AeroVLA, checked_at: 2026-08-20, description: TravelUAV simulation evidence; no RoboRouter runner yet., exact_robot_match: false, exact_runtime_match: false}
+    tags: [language-conditioned, aerial, research]

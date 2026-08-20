@@ -1,0 +1,15 @@
+id: vla-eval-libero-goal
+revision: "vla-eval-0.4.0-lerobot-0.6.0-libero-2a4566009395"
+name: LIBERO Goal through vla-eval
+benchmark: LIBERO
+suite: libero_goal
+simulator: MuJoCo/robosuite
+container_image: ghcr.io/allenai/vla-evaluation-harness/libero:latest
+container_digest: sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413
+robot_profile_id: sim-libero-panda
+task_profile_id: libero-goal-interaction
+action_schema: manipulation.ee_delta_pose.v1
+observation_schema: libero.agentview+wrist+state.v1
+evaluator: libero.environment-predicate.v1
+default_seeds: [7]
+license_requirements: [LIBERO, robosuite]

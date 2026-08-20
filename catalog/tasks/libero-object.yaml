@@ -1,0 +1,12 @@
+id: libero-object-pick-place
+revision: "2026-08-20.1"
+name: LIBERO object pick-and-place
+domain: manipulation
+task_family: pick_and_place
+language_conditioned: true
+requirements: [object_recognition, grasping, placement]
+environment:
+  benchmark: LIBERO
+  suite: libero_object
+max_episode_s: 45
+

@@ -1,0 +1,27 @@
+id: sim-px4-multirotor
+revision: "2026-08-20.1"
+name: PX4 multirotor SITL
+robot_class: aerial.multirotor
+manufacturer: null
+model: PX4 SITL
+middleware: px4_ros2
+simulated: true
+sensors:
+  - id: front
+    type: vision.rgb
+    semantic_name: front
+  - id: imu
+    type: inertial.imu
+  - id: position
+    type: navigation.local_position
+control_surfaces:
+  - schema: aerial.position_setpoint.v1
+    frame: ned
+    units: [m, m, m, rad]
+  - schema: aerial.body_velocity.v1
+    frame: body_frd
+    units: [m/s, m/s, m/s, rad/s]
+safety_capabilities:
+  hardware_estop: false
+  local_limits: true
+

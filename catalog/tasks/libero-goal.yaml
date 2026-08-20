@@ -1,0 +1,12 @@
+id: libero-goal-interaction
+revision: "2026-08-20.1"
+name: LIBERO goal-conditioned interaction
+domain: manipulation
+task_family: articulated_object_interaction
+language_conditioned: true
+requirements: [goal_reasoning, manipulation]
+environment:
+  benchmark: LIBERO
+  suite: libero_goal
+max_episode_s: 60
+

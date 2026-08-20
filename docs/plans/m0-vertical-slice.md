@@ -21,11 +21,11 @@ physical actuation absent.
 
 ## Milestones
 
-- [ ] Repository and documentation baseline
-- [ ] Contracts and catalog validation
-- [ ] API and persistence path
-- [ ] Product UI
-- [ ] End-to-end validation
+- [x] Repository and documentation baseline
+- [x] Contracts and catalog validation
+- [x] API and persistence path
+- [x] Product UI
+- [x] End-to-end local validation
 
 ## Validation
 
@@ -39,3 +39,7 @@ and can be reset through the documented local database command.
 ## Progress log
 
 - 2026-08-20: implementation started from the approved plan.
+- 2026-08-20: completed the fixture-backed web/API/catalog path, generated
+  contracts, and added evaluation-job and remote-worker foundations.
+- 2026-08-20: local tests, lint, type checks, and production web build passed.
+  Remote GPU smoke validation remains tracked separately.

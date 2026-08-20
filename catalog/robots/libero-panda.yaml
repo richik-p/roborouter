@@ -1,0 +1,30 @@
+id: sim-libero-panda
+revision: "2026-08-20.1"
+name: LIBERO Panda simulation
+robot_class: manipulator.single_arm
+manufacturer: Franka Emika
+model: Panda
+middleware: libero
+simulated: true
+sensors:
+  - id: agentview
+    type: vision.rgb
+    semantic_name: scene
+    resolution: [256, 256]
+  - id: wrist
+    type: vision.rgb
+    semantic_name: wrist
+    resolution: [256, 256]
+  - id: state
+    type: proprioception.ee_gripper
+    dimensions: 8
+control_surfaces:
+  - schema: manipulation.ee_delta_pose.v1
+    dimensions: 7
+    rate_hz: 20
+    frame: robot_base
+    units: [m, m, m, rad, rad, rad, normalized_gripper]
+safety_capabilities:
+  hardware_estop: false
+  local_limits: true
+

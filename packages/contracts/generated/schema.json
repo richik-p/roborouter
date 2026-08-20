@@ -1,0 +1,1392 @@
+{
+  "CompatibilityQuery": {
+    "$defs": {
+      "EvidenceLevel": {
+        "enum": [
+          "NATIVE_REAL_VERIFIED",
+          "BRIDGED_REAL_VERIFIED",
+          "SIM_VERIFIED",
+          "UPSTREAM_REPRODUCTION",
+          "RESEARCH_ONLY",
+          "UNKNOWN"
+        ],
+        "title": "EvidenceLevel",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "minimum_evidence": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/EvidenceLevel"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "policy_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Policy Ids"
+      },
+      "robot_profile_id": {
+        "title": "Robot Profile Id",
+        "type": "string"
+      },
+      "robot_revision": {
+        "title": "Robot Revision",
+        "type": "string"
+      },
+      "task_profile_id": {
+        "title": "Task Profile Id",
+        "type": "string"
+      },
+      "task_revision": {
+        "title": "Task Revision",
+        "type": "string"
+      }
+    },
+    "required": [
+      "robot_profile_id",
+      "robot_revision",
+      "task_profile_id",
+      "task_revision"
+    ],
+    "title": "CompatibilityQuery",
+    "type": "object"
+  },
+  "CompatibilityRecord": {
+    "$defs": {
+      "CompatibilityStatus": {
+        "enum": [
+          "NATIVE_REAL_VERIFIED",
+          "BRIDGED_REAL_VERIFIED",
+          "SIM_VERIFIED",
+          "FINE_TUNE_REQUIRED",
+          "RESEARCH_ONLY",
+          "UNKNOWN",
+          "INCOMPATIBLE"
+        ],
+        "title": "CompatibilityStatus",
+        "type": "string"
+      },
+      "Evidence": {
+        "additionalProperties": false,
+        "properties": {
+          "checked_at": {
+            "format": "date",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "exact_robot_match": {
+            "default": false,
+            "title": "Exact Robot Match",
+            "type": "boolean"
+          },
+          "exact_runtime_match": {
+            "default": false,
+            "title": "Exact Runtime Match",
+            "type": "boolean"
+          },
+          "level": {
+            "$ref": "#/$defs/EvidenceLevel"
+          },
+          "source": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "source",
+          "checked_at",
+          "description"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "EvidenceLevel": {
+        "enum": [
+          "NATIVE_REAL_VERIFIED",
+          "BRIDGED_REAL_VERIFIED",
+          "SIM_VERIFIED",
+          "UPSTREAM_REPRODUCTION",
+          "RESEARCH_ONLY",
+          "UNKNOWN"
+        ],
+        "title": "EvidenceLevel",
+        "type": "string"
+      },
+      "SupportedPaths": {
+        "additionalProperties": false,
+        "properties": {
+          "actuate": {
+            "default": false,
+            "title": "Actuate",
+            "type": "boolean"
+          },
+          "shadow": {
+            "default": false,
+            "title": "Shadow",
+            "type": "boolean"
+          },
+          "simulate": {
+            "title": "Simulate",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "simulate"
+        ],
+        "title": "SupportedPaths",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "best_evidence": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Evidence"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "explanation": {
+        "title": "Explanation",
+        "type": "string"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "missing_requirements": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Missing Requirements",
+        "type": "array"
+      },
+      "policy_id": {
+        "title": "Policy Id",
+        "type": "string"
+      },
+      "policy_revision": {
+        "title": "Policy Revision",
+        "type": "string"
+      },
+      "reason_codes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Reason Codes",
+        "type": "array"
+      },
+      "robot_profile_id": {
+        "title": "Robot Profile Id",
+        "type": "string"
+      },
+      "robot_revision": {
+        "title": "Robot Revision",
+        "type": "string"
+      },
+      "ruleset_revision": {
+        "title": "Ruleset Revision",
+        "type": "string"
+      },
+      "score": {
+        "maximum": 100,
+        "minimum": 0,
+        "title": "Score",
+        "type": "integer"
+      },
+      "status": {
+        "$ref": "#/$defs/CompatibilityStatus"
+      },
+      "supported_paths": {
+        "$ref": "#/$defs/SupportedPaths"
+      },
+      "task_profile_id": {
+        "title": "Task Profile Id",
+        "type": "string"
+      },
+      "task_revision": {
+        "title": "Task Revision",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "ruleset_revision",
+      "policy_id",
+      "policy_revision",
+      "robot_profile_id",
+      "robot_revision",
+      "task_profile_id",
+      "task_revision",
+      "status",
+      "reason_codes",
+      "explanation",
+      "supported_paths",
+      "score"
+    ],
+    "title": "CompatibilityRecord",
+    "type": "object"
+  },
+  "EvaluationEnvironmentSpec": {
+    "additionalProperties": false,
+    "properties": {
+      "action_schema": {
+        "title": "Action Schema",
+        "type": "string"
+      },
+      "benchmark": {
+        "title": "Benchmark",
+        "type": "string"
+      },
+      "container_digest": {
+        "title": "Container Digest",
+        "type": "string"
+      },
+      "container_image": {
+        "title": "Container Image",
+        "type": "string"
+      },
+      "default_seeds": {
+        "items": {
+          "type": "integer"
+        },
+        "title": "Default Seeds",
+        "type": "array"
+      },
+      "evaluator": {
+        "title": "Evaluator",
+        "type": "string"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "license_requirements": {
+        "items": {
+          "type": "string"
+        },
+        "title": "License Requirements",
+        "type": "array"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "observation_schema": {
+        "title": "Observation Schema",
+        "type": "string"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "robot_profile_id": {
+        "title": "Robot Profile Id",
+        "type": "string"
+      },
+      "simulator": {
+        "title": "Simulator",
+        "type": "string"
+      },
+      "suite": {
+        "title": "Suite",
+        "type": "string"
+      },
+      "task_profile_id": {
+        "title": "Task Profile Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "revision",
+      "name",
+      "benchmark",
+      "suite",
+      "simulator",
+      "container_image",
+      "container_digest",
+      "robot_profile_id",
+      "task_profile_id",
+      "action_schema",
+      "observation_schema",
+      "evaluator",
+      "default_seeds"
+    ],
+    "title": "EvaluationEnvironmentSpec",
+    "type": "object"
+  },
+  "EvaluationJob": {
+    "$defs": {
+      "EvaluationJobCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "environment_id": {
+            "title": "Environment Id",
+            "type": "string"
+          },
+          "environment_revision": {
+            "title": "Environment Revision",
+            "type": "string"
+          },
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "string"
+          },
+          "policy_revision": {
+            "title": "Policy Revision",
+            "type": "string"
+          },
+          "seeds": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Seeds",
+            "type": "array"
+          },
+          "task_profile_id": {
+            "title": "Task Profile Id",
+            "type": "string"
+          },
+          "task_revision": {
+            "title": "Task Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_id",
+          "policy_revision",
+          "environment_id",
+          "environment_revision",
+          "task_profile_id",
+          "task_revision",
+          "seeds"
+        ],
+        "title": "EvaluationJobCreate",
+        "type": "object"
+      },
+      "EvaluationState": {
+        "enum": [
+          "QUEUED",
+          "CLAIMED",
+          "RUNNING",
+          "SUCCEEDED",
+          "FAILED",
+          "CANCELED"
+        ],
+        "title": "EvaluationState",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
+        "type": "string"
+      },
+      "failure_detail": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Failure Detail"
+      },
+      "failure_kind": {
+        "anyOf": [
+          {
+            "enum": [
+              "infrastructure",
+              "invalid_request",
+              "policy",
+              "canceled"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Failure Kind"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "lease_expires_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Lease Expires At"
+      },
+      "request": {
+        "$ref": "#/$defs/EvaluationJobCreate"
+      },
+      "retry_safe": {
+        "default": false,
+        "title": "Retry Safe",
+        "type": "boolean"
+      },
+      "state": {
+        "$ref": "#/$defs/EvaluationState"
+      },
+      "updated_at": {
+        "format": "date-time",
+        "title": "Updated At",
+        "type": "string"
+      },
+      "worker_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Worker Id"
+      }
+    },
+    "required": [
+      "id",
+      "request",
+      "state",
+      "created_at",
+      "updated_at"
+    ],
+    "title": "EvaluationJob",
+    "type": "object"
+  },
+  "ExecutablePolicySpec": {
+    "$defs": {
+      "ActionSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dimensions"
+          },
+          "expected_rate_hz": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Rate Hz"
+          },
+          "frame": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Frame"
+          },
+          "horizon": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Horizon"
+          },
+          "normalization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Normalization Id"
+          },
+          "schema": {
+            "title": "Schema",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema"
+        ],
+        "title": "ActionSpec",
+        "type": "object"
+      },
+      "Availability": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "open",
+              "closed",
+              "unavailable"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "weights": {
+            "enum": [
+              "open",
+              "gated",
+              "closed",
+              "unavailable"
+            ],
+            "title": "Weights",
+            "type": "string"
+          }
+        },
+        "required": [
+          "weights",
+          "code",
+          "license"
+        ],
+        "title": "Availability",
+        "type": "object"
+      },
+      "Evidence": {
+        "additionalProperties": false,
+        "properties": {
+          "checked_at": {
+            "format": "date",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "exact_robot_match": {
+            "default": false,
+            "title": "Exact Robot Match",
+            "type": "boolean"
+          },
+          "exact_runtime_match": {
+            "default": false,
+            "title": "Exact Runtime Match",
+            "type": "boolean"
+          },
+          "level": {
+            "$ref": "#/$defs/EvidenceLevel"
+          },
+          "source": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "source",
+          "checked_at",
+          "description"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "EvidenceLevel": {
+        "enum": [
+          "NATIVE_REAL_VERIFIED",
+          "BRIDGED_REAL_VERIFIED",
+          "SIM_VERIFIED",
+          "UPSTREAM_REPRODUCTION",
+          "RESEARCH_ONLY",
+          "UNKNOWN"
+        ],
+        "title": "EvidenceLevel",
+        "type": "string"
+      },
+      "ObservationRequirements": {
+        "additionalProperties": false,
+        "properties": {
+          "cameras": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cameras",
+            "type": "array"
+          },
+          "language_prompt": {
+            "default": false,
+            "title": "Language Prompt",
+            "type": "boolean"
+          },
+          "sensor_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sensor Types",
+            "type": "array"
+          },
+          "state_schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State Schema"
+          }
+        },
+        "title": "ObservationRequirements",
+        "type": "object"
+      },
+      "RuntimeSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Config"
+          },
+          "engine_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Engine Revision"
+          },
+          "framework": {
+            "title": "Framework",
+            "type": "string"
+          },
+          "framework_revision": {
+            "title": "Framework Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapter",
+          "framework",
+          "framework_revision"
+        ],
+        "title": "RuntimeSpec",
+        "type": "object"
+      },
+      "SourceSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "checkpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Checkpoint"
+          },
+          "checkpoint_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Checkpoint Revision"
+          },
+          "repository": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Repository",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository"
+        ],
+        "title": "SourceSpec",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "actions": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ActionSpec"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "availability": {
+        "$ref": "#/$defs/Availability"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "evidence": {
+        "items": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "title": "Evidence",
+        "type": "array"
+      },
+      "family": {
+        "title": "Family",
+        "type": "string"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "observations": {
+        "$ref": "#/$defs/ObservationRequirements"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "robot_classes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Robot Classes",
+        "type": "array"
+      },
+      "role": {
+        "default": "policy",
+        "title": "Role",
+        "type": "string"
+      },
+      "runtime": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RuntimeSpec"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "source": {
+        "$ref": "#/$defs/SourceSpec"
+      },
+      "tags": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Tags",
+        "type": "array"
+      },
+      "task_families": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Task Families",
+        "type": "array"
+      }
+    },
+    "required": [
+      "id",
+      "revision",
+      "name",
+      "family",
+      "description",
+      "robot_classes",
+      "task_families",
+      "source",
+      "observations",
+      "availability",
+      "evidence"
+    ],
+    "title": "ExecutablePolicySpec",
+    "type": "object"
+  },
+  "RobotProfile": {
+    "$defs": {
+      "ControlSurface": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dimensions"
+          },
+          "frame": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Frame"
+          },
+          "rate_hz": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rate Hz"
+          },
+          "schema": {
+            "title": "Schema",
+            "type": "string"
+          },
+          "units": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Units",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema"
+        ],
+        "title": "ControlSurface",
+        "type": "object"
+      },
+      "Sensor": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dimensions"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "rate_hz": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rate Hz"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resolution"
+          },
+          "semantic_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Semantic Name"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "Sensor",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "control_surfaces": {
+        "items": {
+          "$ref": "#/$defs/ControlSurface"
+        },
+        "title": "Control Surfaces",
+        "type": "array"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "manufacturer": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Manufacturer"
+      },
+      "middleware": {
+        "title": "Middleware",
+        "type": "string"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "robot_class": {
+        "title": "Robot Class",
+        "type": "string"
+      },
+      "safety_capabilities": {
+        "additionalProperties": {
+          "type": "boolean"
+        },
+        "title": "Safety Capabilities",
+        "type": "object"
+      },
+      "sensors": {
+        "items": {
+          "$ref": "#/$defs/Sensor"
+        },
+        "title": "Sensors",
+        "type": "array"
+      },
+      "simulated": {
+        "default": false,
+        "title": "Simulated",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "revision",
+      "name",
+      "robot_class",
+      "middleware",
+      "sensors",
+      "control_surfaces"
+    ],
+    "title": "RobotProfile",
+    "type": "object"
+  },
+  "Rollout": {
+    "$defs": {
+      "Artifact": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "video",
+              "observation_trace",
+              "predicted_action_trace",
+              "executed_action_trace",
+              "log",
+              "config"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "media_type": {
+            "title": "Media Type",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "minimum": 0,
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "uri",
+          "media_type",
+          "sha256",
+          "size_bytes"
+        ],
+        "title": "Artifact",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "artifacts": {
+        "items": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "title": "Artifacts",
+        "type": "array"
+      },
+      "duration_ms": {
+        "minimum": 0,
+        "title": "Duration Ms",
+        "type": "integer"
+      },
+      "environment_id": {
+        "title": "Environment Id",
+        "type": "string"
+      },
+      "environment_revision": {
+        "title": "Environment Revision",
+        "type": "string"
+      },
+      "evaluation_job_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Evaluation Job Id"
+      },
+      "evidence_note": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Evidence Note"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "metrics": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "title": "Metrics",
+        "type": "object"
+      },
+      "mode": {
+        "enum": [
+          "sim",
+          "shadow",
+          "actuate"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "policy_revision": {
+        "title": "Policy Revision",
+        "type": "string"
+      },
+      "policy_spec_id": {
+        "title": "Policy Spec Id",
+        "type": "string"
+      },
+      "robot_profile_id": {
+        "title": "Robot Profile Id",
+        "type": "string"
+      },
+      "robot_revision": {
+        "title": "Robot Revision",
+        "type": "string"
+      },
+      "runtime_identity": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Runtime Identity",
+        "type": "object"
+      },
+      "safety": {
+        "additionalProperties": true,
+        "title": "Safety",
+        "type": "object"
+      },
+      "seed": {
+        "title": "Seed",
+        "type": "integer"
+      },
+      "started_at": {
+        "format": "date-time",
+        "title": "Started At",
+        "type": "string"
+      },
+      "success": {
+        "title": "Success",
+        "type": "boolean"
+      },
+      "task_profile_id": {
+        "title": "Task Profile Id",
+        "type": "string"
+      },
+      "task_revision": {
+        "title": "Task Revision",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "mode",
+      "policy_spec_id",
+      "policy_revision",
+      "robot_profile_id",
+      "robot_revision",
+      "task_profile_id",
+      "task_revision",
+      "environment_id",
+      "environment_revision",
+      "seed",
+      "started_at",
+      "duration_ms",
+      "success",
+      "metrics",
+      "runtime_identity"
+    ],
+    "title": "Rollout",
+    "type": "object"
+  },
+  "TaskProfile": {
+    "additionalProperties": false,
+    "properties": {
+      "domain": {
+        "title": "Domain",
+        "type": "string"
+      },
+      "environment": {
+        "additionalProperties": true,
+        "title": "Environment",
+        "type": "object"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "language_conditioned": {
+        "default": false,
+        "title": "Language Conditioned",
+        "type": "boolean"
+      },
+      "max_episode_s": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Max Episode S"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "requirements": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Requirements",
+        "type": "array"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "task_family": {
+        "title": "Task Family",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "revision",
+      "name",
+      "domain",
+      "task_family"
+    ],
+    "title": "TaskProfile",
+    "type": "object"
+  }
+}

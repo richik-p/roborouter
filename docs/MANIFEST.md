@@ -29,8 +29,19 @@ Generated files: 26
 - `docs/research/RESEARCH_INDEX.md`
 - `docs/research/SOURCES.md`
 
+## Implementation directories added 2026-08-20
+
+- `apps/web/`
+- `services/api/`
+- `services/eval-worker/`
+- `packages/contracts/`
+- `agents/rr-agent/`
+- `catalog/`
+- `infra/`
+
 ## Notes
 
-- This pack contains planning/research/docs only; no product implementation.
-- Research snapshot is 2026-08-19.
-- Start with `START_HERE.md`, then hand `CODEX_HANDOFF.md` to Codex.
+- The 26-file list above is the reconstructed documentation starter pack, not a
+  claim that the repository still contains documents only.
+- Research snapshot is 2026-08-20.
+- Start with `START_HERE.md`; implementation status and commands are in `README.md`.

@@ -93,7 +93,7 @@ The first physical pilot should use a robot that already has a working programma
                               │           │
                     ┌─────────▼──┐   ┌────▼──────────────┐
                     │ Sim/Eval   │   │ Policy Runners   │
-                    │ Envs       │   │ XPolicyLab-first │
+                    │ Envs       │   │ adapter boundary │
                     └────────────┘   └──────┬────────────┘
                                            │
                                       semantic actions
@@ -162,8 +162,55 @@ Those may become future products only after the initial workflow is proven.
 
 ## Status
 
-**Pre-implementation / product-definition stage.**
+**Local implementation baseline, with remote execution awaiting GPU verification.**
 
-The next step is not to write the entire platform. The next step is to hand this repository to Codex, have it critique the plan, turn the roadmap into scoped GitHub issues, and then build milestone-by-milestone.
+The repository now includes:
 
-Research snapshot: **2026-08-19**. Robotics infrastructure is moving rapidly; current claims should be reverified before major dependency or product decisions.
+- immutable Pydantic contracts and generated JSON Schema/OpenAPI/TypeScript types;
+- a reviewed 22-policy YAML catalog spanning manipulation and UAV research;
+- deterministic, ruleset-versioned compatibility checks;
+- a FastAPI/SQLAlchemy control plane with PostgreSQL leases, worker authentication,
+  idempotent Rollout ingestion, and scoped S3-compatible artifact uploads;
+- an outbound-polling evaluation worker for the pinned `vla-eval` boundary;
+- a Next.js product UI for Explore, policy detail, evaluation progress, Rollouts,
+  comparison, and pilot boundaries;
+- a provenance-labeled upstream π₀.₅/LIBERO fixture, usable without CUDA.
+
+No physical-actuation API exists. The `rr-agent` directory is a deferred safety
+boundary, not an executable robot controller.
+
+## Local development
+
+Prerequisites are Node.js 22+, Python 3.11, `uv`, and Docker with Compose.
+
+```bash
+cp .env.example .env
+npm install
+uv sync --all-packages --dev
+make db-up
+```
+
+Then start the API and web app in separate terminals:
+
+```bash
+make api
+make web
+```
+
+Open [http://localhost:3000](http://localhost:3000). Run the complete local
+verification suite with `make check`.
+
+The NVIDIA worker setup and remaining provenance pins are documented in
+[`services/eval-worker/README.md`](services/eval-worker/README.md) and
+[`docs/plans/remote-evaluation.md`](docs/plans/remote-evaluation.md).
+
+## Known validation boundary
+
+This workstation has no available Docker daemon, NVIDIA worker, or physical robot.
+The deterministic fixture path and local SQLite verification pass here; PostgreSQL,
+MinIO, and the generated Compose configuration are present but must be exercised on
+a Docker-capable host. The remote harness, model snapshots, and LIBERO image are
+pinned, but the first CUDA smoke episode has not yet been executed.
+
+Research snapshot: **2026-08-20**. Robotics infrastructure is moving rapidly;
+current claims should be reverified before major dependency or product decisions.

@@ -71,6 +71,7 @@ def test_catalog_compatibility_rollout_and_job_flow() -> None:
         )
         assert grant.status_code == 200
         assert grant.json()["artifact"]["uri"].startswith("s3://roborouter-artifacts/jobs/")
+        assert grant.json()["upload_url"].startswith("https://artifacts.example.test/")
         assert "X-Amz-Signature" in grant.json()["upload_url"]
         assert grant.json()["required_headers"]["x-amz-meta-sha256"] == "a" * 64
 

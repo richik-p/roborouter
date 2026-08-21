@@ -163,10 +163,10 @@ def _canonical_digest(value: object) -> bytes:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).digest()
 
 
-def _s3_client():
+def _s3_client(endpoint_url: str | None = None):
     return boto3.client(
         "s3",
-        endpoint_url=settings.s3_endpoint_url,
+        endpoint_url=endpoint_url or settings.s3_endpoint_url,
         aws_access_key_id=settings.s3_access_key,
         aws_secret_access_key=settings.s3_secret_key,
         region_name="us-east-1",
@@ -527,7 +527,7 @@ async def presign_artifact(
             artifact_row = await session.get(ArtifactRow, artifact_id)
             if artifact_row is None:
                 raise HTTPException(status_code=409, detail="artifact grant conflict") from None
-    upload_url = _s3_client().generate_presigned_url(
+    upload_url = _s3_client(settings.s3_public_endpoint_url).generate_presigned_url(
         "put_object",
         Params={
             "Bucket": settings.s3_bucket,

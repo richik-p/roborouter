@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://roborouter:roborouter@localhost:5432/roborouter"
     s3_endpoint_url: str = "http://localhost:9000"
+    s3_public_endpoint_url: str | None = None
     s3_access_key: str = "roborouter"
     s3_secret_key: str = "roborouter-local-only"
     s3_bucket: str = "roborouter-artifacts"

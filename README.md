@@ -160,6 +160,9 @@ Those may become future products only after the initial workflow is proven.
 9. [`docs/ROADMAP.md`](docs/ROADMAP.md)
 10. [`CODEX_HANDOFF.md`](CODEX_HANDOFF.md)
 
+The post-GitHub execution sequence is in
+[`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md).
+
 ## Status
 
 **Local implementation baseline, with remote execution awaiting GPU verification.**

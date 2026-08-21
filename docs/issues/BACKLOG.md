@@ -18,7 +18,7 @@ This is the local issue source until a GitHub remote exists.
 - [x] M2-05 evaluation UX
 - [x] M3-01 MolmoAct2 runner configuration
 - [ ] M3-02 comparable evaluation sets — contracts/UI complete; matched real runs pending
-- [x] M3-03 Compare UX and fixture regression path
+- [ ] M3-03 completed-result Compare UX and browser regression path
 - [ ] M4 UAV simulation proof
 - [ ] M5 read-only and shadow pilot
 - [ ] M6 supervised physical actuation

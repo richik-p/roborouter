@@ -1,225 +1,162 @@
 # RoboRouter
 
-> **Find, evaluate, and run models for your robot.**
+[![CI](https://github.com/richik-p/roborouter/actions/workflows/check.yml/badge.svg)](https://github.com/richik-p/roborouter/actions/workflows/check.yml)
 
-RoboRouter is an early-stage developer platform for discovering robot policies, checking whether they are actually compatible with a specific robot and task, comparing them in simulation or replay, and eventually running them through local or remote compute without forcing users to learn each model family's serving stack.
+**Evidence-aware discovery and evaluation for robot policies.**
 
-This repository is intentionally **not an SO-101-only or arm-only project**. The product model is designed to extend across single arms, bimanual systems, dexterous hands, mobile manipulators, humanoids, drones/UAVs, rovers, quadrupeds, and future embodiments by separating policy integration from hardware integration.
+RoboRouter helps robotics developers answer a practical question: _which policy can
+actually run on this robot, for this task, through this interface, with defensible
+evidence?_
 
-## Why this exists
+The platform combines a reviewed policy catalog, explicit robot and task profiles,
+deterministic compatibility rules, reproducible evaluation jobs, and immutable
+Rollout records. It is designed for multiple embodiments—including manipulators,
+mobile robots, dexterous hands, and UAVs—without treating every robot as the same
+action tensor.
 
-Robot foundation-model development is fragmenting quickly. A user may want to try π0.5, GR00T N1.7, SmolVLA, MolmoAct2, a task-specific diffusion policy, a dexterous-hand model, or an aerial VLA, but “the weights are available” does not mean “this model can safely run on my robot.”
+> [!IMPORTANT]
+> RoboRouter is pre-beta and currently supports simulation evaluation only. No
+> physical-actuation API is included.
 
-Compatibility depends on more than a model name:
+## What it provides
 
-- robot embodiment and degrees of freedom;
-- available sensors and camera names/configuration;
-- state representation;
-- action representation and controller semantics;
-- preprocessing and normalization/unnormalization;
-- control frequency and action-chunk semantics;
-- runtime/framework dependencies;
-- exact checkpoint revision;
-- evidence that the combination has been tested in simulation or on physical hardware.
+- A reviewed catalog of robot-policy families with exact checkpoints, runtime
+  requirements, interface contracts, licenses, and evidence provenance.
+- Explainable compatibility results for a selected robot, task, and policy,
+  including missing requirements and supported execution paths.
+- Versioned `RobotProfile`, `TaskProfile`, `ExecutablePolicySpec`,
+  `CompatibilityRecord`, and `Rollout` contracts.
+- PostgreSQL-backed evaluation jobs with leases, heartbeats, cancellation, and
+  idempotent completion.
+- Outbound-only evaluation workers with scoped, revocable per-worker credentials.
+- S3-compatible storage for hashed videos, traces, logs, and configuration
+  snapshots.
+- A web interface for policy discovery, compatibility analysis, evaluation status,
+  Rollout provenance, and matched policy comparisons.
 
-RoboRouter makes those dependencies explicit rather than hiding them behind a generic `model=` string.
+## Current evaluation boundary
 
-## Product thesis
+The first executable integration targets the
+[AllenAI VLA evaluation harness](https://github.com/allenai/vla-evaluation-harness)
+with LIBERO through its LeRobot bridge.
 
-The product revolves around five objects:
+The catalog includes executable specifications for:
 
-1. **RobotProfile** — what hardware, sensors, middleware, and safe control surfaces exist.
-2. **TaskProfile** — what the user is trying to accomplish.
-3. **ExecutablePolicySpec** — the exact runnable policy identity, including the transformations around the weights.
-4. **CompatibilityRecord** — the evidence-backed relationship between a policy, robot, task, and execution path.
-5. **Rollout** — a reproducible record of what happened during simulation, shadow execution, or physical execution.
+- π₀.₅ using `lerobot/pi05_libero_finetuned_v044`;
+- MolmoAct2 using `allenai/MolmoAct2-LIBERO`.
 
-The initial user experience should be closer to:
+The application ships with provenance-labeled upstream fixtures, so discovery,
+compatibility, Rollout inspection, and matched comparison flows work locally without
+a GPU. Real policy execution requires a separately provisioned NVIDIA Linux worker.
 
-> “I have this robot and this task. What can I use?”
-
-than:
-
-> “Here are 400 robotics models.”
-
-## MVP
-
-The first credible public MVP should demonstrate all three of these experiences:
-
-### 1. Discovery
-
-A technical user can filter a curated catalog by:
-
-- robot class;
-- task;
-- model role;
-- required sensors;
-- action/control surface;
-- language conditioning;
-- zero-shot vs fine-tune required;
-- simulation vs physical evidence;
-- open weights/code/API availability;
-- compute requirements;
-- license.
-
-### 2. Evaluation without owning a robot
-
-A user can choose compatible policies and run the same task in a supported simulator/evaluation environment, producing comparable videos, metrics, exact revisions, and Rollout objects.
-
-### 3. One external physical-robot pilot
-
-A collaborator installs a lightweight local `rr-agent`, runs a compatibility/diagnostic check, streams observations to a policy runner in **shadow mode**, and then—after local arming and safety checks—executes one known-working policy through RoboRouter.
-
-The first physical pilot should use a robot that already has a working programmatic control interface and at least one known-good policy. The purpose is to validate RoboRouter, not simultaneously prove novel model transfer.
-
-## Architecture in one picture
+## Architecture
 
 ```text
-                         ┌──────────────────────┐
-                         │      Web App         │
-                         │ Discover / Compare   │
-                         │ Robots / Evals       │
-                         │ Rollouts             │
-                         └──────────┬───────────┘
-                                    │
-                         ┌──────────▼───────────┐
-                         │   Control Plane      │
-                         │ Catalog / Profiles   │
-                         │ Compatibility        │
-                         │ Sessions / Rollouts  │
-                         └────┬───────────┬─────┘
-                              │           │
-                    eval path │           │ execution path
-                              │           │
-                    ┌─────────▼──┐   ┌────▼──────────────┐
-                    │ Sim/Eval   │   │ Policy Runners   │
-                    │ Envs       │   │ adapter boundary │
-                    └────────────┘   └──────┬────────────┘
-                                           │
-                                      semantic actions
-                                           │
-                                    ┌──────▼───────┐
-                                    │   rr-agent   │
-                                    │ LeRobot      │
-                                    │ ROS 2        │
-                                    │ PX4          │
-                                    │ vendor SDK   │
-                                    │ local safety │
-                                    └──────┬───────┘
-                                           │
-                                         ROBOT
+Browser ──► Next.js web app ──► FastAPI control plane ──► PostgreSQL
+                                      │
+                                      ├──► S3-compatible artifact storage
+                                      │
+                                      ◄── outbound-polling evaluation worker
+                                                   │
+                                                   └──► pinned simulator/policy runtime
 ```
 
-## Key architectural rule
+Policy adapters and robot adapters are intentionally separate:
 
-**Policy adapters and robot adapters are different layers.**
+- A policy adapter defines how a specific model revision is loaded and executed.
+- A robot adapter defines observations, semantic actions, and local safety controls.
 
-- Policy adapters answer: *How do I run this model?*
-- Robot adapters answer: *How do I observe and safely command this machine?*
+Compatibility is graded and evidence-backed. Missing camera mappings, coordinate
+frames, normalization identities, action semantics, or control contracts remain
+unknown rather than being inferred.
 
-Do not create one integration for every `(policy × robot)` pair.
+## Repository layout
 
-## Existing ecosystems to build on
+```text
+apps/web/                 Next.js product interface
+services/api/             FastAPI control plane and compatibility engine
+services/eval-worker/     Remote evaluation worker and harness adapter
+packages/contracts/       Pydantic contracts and generated schemas
+catalog/                  Reviewed policy, robot, task, and environment definitions
+infra/                    Local and production deployment configuration
+docs/                     Architecture, safety, research, and product documentation
+```
 
-RoboRouter should deliberately integrate with, rather than replace:
+## Quickstart
 
-- **XPolicyLab** for a large and rapidly growing policy integration/evaluation layer;
-- **Hugging Face LeRobot** for robot abstractions, datasets, policies, and bring-your-own-hardware workflows;
-- **ROS 2 / ros2_control** for research/industrial robot hardware and control interfaces;
-- **PX4 + ROS 2** for high-level drone control while retaining the flight controller as the local real-time/safety authority;
-- **RoboDojo / RoboTwin / other benchmark environments** for reproducible evaluation where useful;
-- model-native runtimes when the common layer is missing or materially worse.
+Prerequisites:
 
-See [`docs/research/CURRENT_ECOSYSTEM.md`](docs/research/CURRENT_ECOSYSTEM.md).
-
-## What this project is not yet
-
-The MVP is **not**:
-
-- a GPU marketplace;
-- a training-as-a-service company;
-- an app store with creator payouts;
-- a new universal robot wire protocol;
-- a universal low-level action tensor;
-- a cross-policy mid-episode failover system;
-- a cloud safety controller;
-- an autonomous fleet-management system.
-
-Those may become future products only after the initial workflow is proven.
-
-## Read this repository in this order
-
-1. [`START_HERE.md`](START_HERE.md)
-2. [`docs/PRODUCT.md`](docs/PRODUCT.md)
-3. [`docs/MVP.md`](docs/MVP.md)
-4. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-5. [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md)
-6. [`docs/SAFETY.md`](docs/SAFETY.md)
-7. [`docs/DECISIONS.md`](docs/DECISIONS.md)
-8. [`docs/research/RESEARCH_INDEX.md`](docs/research/RESEARCH_INDEX.md)
-9. [`docs/ROADMAP.md`](docs/ROADMAP.md)
-10. [`CODEX_HANDOFF.md`](CODEX_HANDOFF.md)
-
-The post-GitHub execution sequence is in
-[`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md).
-
-## Status
-
-**Local implementation baseline, with remote execution awaiting GPU verification.**
-
-The repository now includes:
-
-- immutable Pydantic contracts and generated JSON Schema/OpenAPI/TypeScript types;
-- a reviewed 22-policy YAML catalog spanning manipulation and UAV research;
-- deterministic, ruleset-versioned compatibility checks;
-- a FastAPI/SQLAlchemy control plane with PostgreSQL leases, worker authentication,
-  idempotent Rollout ingestion, and scoped S3-compatible artifact uploads;
-- an outbound-polling evaluation worker for the pinned `vla-eval` boundary;
-- a Next.js product UI for Explore, policy detail, evaluation progress, Rollouts,
-  comparison, and pilot boundaries;
-- a provenance-labeled upstream π₀.₅/LIBERO fixture, usable without CUDA.
-
-No physical-actuation API exists. The `rr-agent` directory is a deferred safety
-boundary, not an executable robot controller.
-
-## Local development
-
-Prerequisites are Node.js 22+, Python 3.11, `uv`, and Docker with Compose.
+- Node.js 22 or newer
+- Python 3.11
+- [`uv`](https://docs.astral.sh/uv/)
+- Docker with Compose
 
 ```bash
+git clone git@github.com:richik-p/roborouter.git
+cd roborouter
 cp .env.example .env
-npm install
+npm ci
 uv sync --all-packages --dev
 make db-up
 ```
 
-Then start the API and web app in separate terminals:
+Start the API and web application in separate terminals:
 
 ```bash
 make api
+```
+
+```bash
 make web
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Run the complete local
-verification suite with `make check`.
+Open [http://localhost:3000](http://localhost:3000).
 
-With Docker running, verify the real PostgreSQL and MinIO path—including a signed
-artifact upload and idempotent completion replay—with:
+## Validation
+
+Run contracts, API and worker tests, schema generation, linting, type checking,
+documentation checks, and the production web build:
+
+```bash
+make check
+```
+
+Run the browser end-to-end suite:
+
+```bash
+npx playwright install chromium
+make e2e
+```
+
+Verify the complete PostgreSQL and MinIO path, including a signed artifact upload
+and idempotent completion replay:
 
 ```bash
 make integration-local
 ```
 
-The NVIDIA worker setup and remaining provenance pins are documented in
-[`services/eval-worker/README.md`](services/eval-worker/README.md) and
-[`docs/plans/remote-evaluation.md`](docs/plans/remote-evaluation.md).
+## Safety model
 
-## Known validation boundary
+RoboRouter does not silently infer control semantics and does not expose physical
+actuation in the current release. A future robot-side runtime must retain local
+authority for arming, limits, watchdogs, hold behavior, fault handling, and manual
+recovery. Cloud connectivity must never be the final motion-safety boundary.
 
-The deterministic fixture path and the real local PostgreSQL/MinIO integration have
-been verified on this workstation. There is no NVIDIA worker or physical robot. The
-remote harness, model snapshots, and LIBERO image are pinned, but the first CUDA smoke
-episode has not yet been executed.
+See [Safety](docs/SAFETY.md) for the complete project policy.
 
-Research snapshot: **2026-08-20**. Robotics infrastructure is moving rapidly;
-current claims should be reverified before major dependency or product decisions.
+## Documentation
+
+- [Product overview](docs/PRODUCT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Data model](docs/DATA_MODEL.md)
+- [Catalog format](docs/CATALOG.md)
+- [Safety](docs/SAFETY.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Contributing](CONTRIBUTING.md)
+
+## Project status
+
+RoboRouter is an active pre-beta project. Local fixture workflows, compatibility
+evaluation, worker orchestration, artifact persistence, and browser tests are
+implemented. Remote CUDA evaluation and physical-robot integrations require
+separate hardware validation and are not represented as completed capabilities.

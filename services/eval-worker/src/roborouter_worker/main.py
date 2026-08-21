@@ -61,7 +61,6 @@ async def upload_artifacts(
             grant_response = await client.post(
                 f"/private/workers/jobs/{job.id}/artifacts/presign",
                 json={
-                    "worker_id": settings.worker_id,
                     "kind": kind,
                     "filename": path.name,
                     "media_type": media_type,
@@ -90,7 +89,6 @@ async def maintain_lease(
     while not stop.is_set():
         response = await client.post(
             f"/private/workers/jobs/{job.id}/heartbeat",
-            params={"worker_id": settings.worker_id},
         )
         response.raise_for_status()
         try:
@@ -150,7 +148,6 @@ async def work_forever(settings: WorkerSettings) -> None:
                 result = await client.post(
                     f"/private/workers/jobs/{job.id}/complete",
                     json={
-                        "worker_id": settings.worker_id,
                         "rollouts": [item.model_dump(mode="json") for item in rollouts],
                     },
                 )
@@ -168,7 +165,6 @@ async def work_forever(settings: WorkerSettings) -> None:
                 failure = await client.post(
                     f"/private/workers/jobs/{job.id}/fail",
                     json={
-                        "worker_id": settings.worker_id,
                         "kind": "infrastructure",
                         "detail": str(exc),
                         "retry_safe": False,

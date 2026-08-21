@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import hmac
 import json
 import re
 import uuid
@@ -13,7 +12,7 @@ from typing import Annotated, Literal
 import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 from roborouter_contracts import (
@@ -49,6 +48,7 @@ from .db_models import (
 )
 from .seed import seed_database
 from .settings import get_settings
+from .worker_auth import WorkerPrincipal, require_worker_scope
 
 settings = get_settings()
 
@@ -108,13 +108,11 @@ class RolloutListResponse(BaseModel):
 
 class WorkerCompletion(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    worker_id: str
     rollouts: list[Rollout] = Field(min_length=1)
 
 
 class WorkerFailure(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    worker_id: str
     kind: Literal["infrastructure", "invalid_request", "policy"]
     detail: str
     retry_safe: bool = False
@@ -122,7 +120,6 @@ class WorkerFailure(BaseModel):
 
 class ArtifactPresignRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    worker_id: str
     kind: Literal[
         "video",
         "observation_trace",
@@ -209,13 +206,12 @@ async def _verify_uploaded_artifact(row: ArtifactRow) -> None:
         raise HTTPException(status_code=422, detail=f"artifact {row.artifact_id} metadata does not match grant")
 
 
-def _require_worker(authorization: Annotated[str | None, Header()] = None) -> None:
-    expected = f"Bearer {settings.worker_token}"
-    if authorization is None or not hmac.compare_digest(authorization, expected):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid worker token")
-
-
-WorkerAuth = Annotated[None, Depends(_require_worker)]
+WorkerRegisterAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("worker:register"))]
+WorkerClaimAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("job:claim"))]
+WorkerHeartbeatAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("job:heartbeat"))]
+WorkerArtifactAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("artifact:write"))]
+WorkerCompleteAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("job:complete"))]
+WorkerFailAuth = Annotated[WorkerPrincipal, Depends(require_worker_scope("job:fail"))]
 
 
 @app.get("/health")
@@ -399,8 +395,36 @@ async def cancel_evaluation(job_id: str, session: Session) -> EvaluationJob:
 
 
 @app.get("/v0/rollouts", response_model=RolloutListResponse)
-async def list_rollouts(session: Session) -> RolloutListResponse:
+async def list_rollouts(
+    session: Session,
+    policy_id: str | None = None,
+    environment_id: str | None = None,
+    task_profile_id: str | None = None,
+) -> RolloutListResponse:
     rows = list((await session.scalars(select(RolloutRow).order_by(RolloutRow.created_at.desc()))).all())
+    items = [Rollout.model_validate(row.spec) for row in rows]
+    if policy_id:
+        items = [item for item in items if item.policy_spec_id == policy_id]
+    if environment_id:
+        items = [item for item in items if item.environment_id == environment_id]
+    if task_profile_id:
+        items = [item for item in items if item.task_profile_id == task_profile_id]
+    return RolloutListResponse(items=items, total=len(items))
+
+
+@app.get("/v0/evaluations/{job_id}/rollouts", response_model=RolloutListResponse)
+async def list_evaluation_rollouts(job_id: str, session: Session) -> RolloutListResponse:
+    if await session.get(EvaluationJobRow, job_id) is None:
+        raise HTTPException(status_code=404, detail="evaluation not found")
+    rows = list(
+        (
+            await session.scalars(
+                select(RolloutRow)
+                .where(RolloutRow.evaluation_job_id == job_id)
+                .order_by(RolloutRow.created_at)
+            )
+        ).all()
+    )
     items = [Rollout.model_validate(row.spec) for row in rows]
     return RolloutListResponse(items=items, total=len(items))
 
@@ -414,7 +438,11 @@ async def get_rollout(rollout_id: str, session: Session) -> Rollout:
 
 
 @app.post("/private/workers/register", response_model=WorkerCapabilities)
-async def register_worker(capabilities: WorkerCapabilities, _: WorkerAuth, session: Session) -> WorkerCapabilities:
+async def register_worker(
+    capabilities: WorkerCapabilities, principal: WorkerRegisterAuth, session: Session
+) -> WorkerCapabilities:
+    if principal.worker_id != capabilities.worker_id:
+        raise HTTPException(status_code=403, detail="credential cannot register another worker identity")
     row = await session.get(WorkerRow, capabilities.worker_id)
     now = datetime.now(UTC)
     data = capabilities.model_dump(mode="json")
@@ -428,7 +456,11 @@ async def register_worker(capabilities: WorkerCapabilities, _: WorkerAuth, sessi
 
 
 @app.post("/private/workers/claim", response_model=EvaluationJob | None)
-async def claim_job(capabilities: WorkerCapabilities, _: WorkerAuth, session: Session) -> EvaluationJob | None:
+async def claim_job(
+    capabilities: WorkerCapabilities, principal: WorkerClaimAuth, session: Session
+) -> EvaluationJob | None:
+    if principal.worker_id != capabilities.worker_id:
+        raise HTTPException(status_code=403, detail="credential cannot claim for another worker identity")
     now = datetime.now(UTC)
     statement = (
         select(EvaluationJobRow)
@@ -462,6 +494,7 @@ async def claim_job(capabilities: WorkerCapabilities, _: WorkerAuth, session: Se
             continue
         row.state = EvaluationState.CLAIMED.value
         row.worker_id = capabilities.worker_id
+        row.credential_id = principal.credential_id
         row.lease_expires_at = now + timedelta(seconds=settings.worker_lease_seconds)
         row.updated_at = now
         await session.commit()
@@ -470,11 +503,15 @@ async def claim_job(capabilities: WorkerCapabilities, _: WorkerAuth, session: Se
 
 
 @app.post("/private/workers/jobs/{job_id}/heartbeat", response_model=EvaluationJob)
-async def heartbeat(job_id: str, worker_id: str, _: WorkerAuth, session: Session) -> EvaluationJob:
+async def heartbeat(job_id: str, principal: WorkerHeartbeatAuth, session: Session) -> EvaluationJob:
     row = await session.get(EvaluationJobRow, job_id, with_for_update=True)
     if row is None:
         raise HTTPException(status_code=404, detail="evaluation not found")
-    if row.worker_id != worker_id or row.state not in {"CLAIMED", "RUNNING"}:
+    if (
+        row.worker_id != principal.worker_id
+        or row.credential_id != principal.credential_id
+        or row.state not in {"CLAIMED", "RUNNING"}
+    ):
         raise HTTPException(status_code=409, detail="worker does not own an active lease")
     now = datetime.now(UTC)
     row.state = EvaluationState.RUNNING.value
@@ -491,13 +528,17 @@ async def heartbeat(job_id: str, worker_id: str, _: WorkerAuth, session: Session
 async def presign_artifact(
     job_id: str,
     body: ArtifactPresignRequest,
-    _: WorkerAuth,
+    principal: WorkerArtifactAuth,
     session: Session,
 ) -> ArtifactUploadGrant:
     row = await session.get(EvaluationJobRow, job_id)
     if row is None:
         raise HTTPException(status_code=404, detail="evaluation not found")
-    if row.worker_id != body.worker_id or row.state not in {"CLAIMED", "RUNNING"}:
+    if (
+        row.worker_id != principal.worker_id
+        or row.credential_id != principal.credential_id
+        or row.state not in {"CLAIMED", "RUNNING"}
+    ):
         raise HTTPException(status_code=409, detail="worker does not own this evaluation")
     safe_filename = re.sub(r"[^a-zA-Z0-9._-]", "_", body.filename)
     identity = "|".join([job_id, body.kind, safe_filename, body.media_type, body.sha256, str(body.size_bytes)])
@@ -545,10 +586,14 @@ async def presign_artifact(
 
 
 @app.post("/private/workers/jobs/{job_id}/complete", response_model=EvaluationJob)
-async def complete_job(job_id: str, body: WorkerCompletion, _: WorkerAuth, session: Session) -> EvaluationJob:
+async def complete_job(
+    job_id: str, body: WorkerCompletion, principal: WorkerCompleteAuth, session: Session
+) -> EvaluationJob:
     row = await session.get(EvaluationJobRow, job_id, with_for_update=True)
     if row is None:
         raise HTTPException(status_code=404, detail="evaluation not found")
+    if row.worker_id != principal.worker_id or row.credential_id != principal.credential_id:
+        raise HTTPException(status_code=409, detail="worker credential does not own this evaluation")
     if row.state == EvaluationState.SUCCEEDED.value:
         for rollout in body.rollouts:
             existing = await session.get(RolloutRow, rollout.id)
@@ -559,7 +604,7 @@ async def complete_job(job_id: str, body: WorkerCompletion, _: WorkerAuth, sessi
             ):
                 raise HTTPException(status_code=409, detail="completed evaluation content does not match")
         return _job(row)
-    if row.worker_id != body.worker_id or row.state not in {"CLAIMED", "RUNNING"}:
+    if row.state not in {"CLAIMED", "RUNNING"}:
         raise HTTPException(status_code=409, detail="worker does not own this evaluation")
     artifact_rows: dict[str, ArtifactRow] = {}
     for rollout in body.rollouts:
@@ -603,11 +648,15 @@ async def complete_job(job_id: str, body: WorkerCompletion, _: WorkerAuth, sessi
 
 
 @app.post("/private/workers/jobs/{job_id}/fail", response_model=EvaluationJob)
-async def fail_job(job_id: str, body: WorkerFailure, _: WorkerAuth, session: Session) -> EvaluationJob:
+async def fail_job(job_id: str, body: WorkerFailure, principal: WorkerFailAuth, session: Session) -> EvaluationJob:
     row = await session.get(EvaluationJobRow, job_id, with_for_update=True)
     if row is None:
         raise HTTPException(status_code=404, detail="evaluation not found")
-    if row.worker_id != body.worker_id or row.state not in {"CLAIMED", "RUNNING"}:
+    if (
+        row.worker_id != principal.worker_id
+        or row.credential_id != principal.credential_id
+        or row.state not in {"CLAIMED", "RUNNING"}
+    ):
         raise HTTPException(status_code=409, detail="worker does not own this evaluation")
     row.state = EvaluationState.FAILED.value
     row.failure_kind = body.kind

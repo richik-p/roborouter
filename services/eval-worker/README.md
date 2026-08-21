@@ -31,7 +31,14 @@ git clone --branch v0.4.0 --depth 1 https://github.com/allenai/vla-evaluation-ha
 uv sync --all-packages --dev
 ```
 
-Configure a scoped token and HTTPS API URL in `.env`:
+On the control-plane host, create this worker's scoped credential first:
+
+```bash
+uv run roborouter-worker-credentials create --worker-id gpu-worker-01 --label primary-gpu --ttl-days 30
+```
+
+The command prints the raw `rrw_...` token once. Store it outside Git, then configure
+that token and the HTTPS API URL in the worker's `.env`:
 
 ```dotenv
 API_BASE_URL=https://api.example.invalid

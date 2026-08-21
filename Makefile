@@ -1,4 +1,4 @@
-.PHONY: dev api web worker install generate test lint typecheck docs-check check integration-local db-up db-down seed
+.PHONY: dev api web worker install generate test lint typecheck docs-check check e2e integration-local db-up db-down seed
 
 install:
 	uv sync --all-packages --dev
@@ -37,6 +37,9 @@ docs-check:
 
 check: generate test lint typecheck docs-check
 	npm run build
+
+e2e:
+	npm run e2e
 
 integration-local:
 	docker compose -f infra/compose.yml up -d --wait postgres minio

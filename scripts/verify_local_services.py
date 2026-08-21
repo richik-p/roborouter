@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import uuid
 
 import httpx
 from fastapi.testclient import TestClient
@@ -13,7 +12,8 @@ os.environ.setdefault("S3_ACCESS_KEY", "roborouter")
 os.environ.setdefault("S3_SECRET_KEY", "roborouter-local-only")
 os.environ.setdefault("S3_BUCKET", "roborouter-artifacts")
 os.environ.setdefault("S3_VERIFY_UPLOADS", "true")
-os.environ.setdefault("WORKER_TOKEN", "local-integration-worker-token")
+os.environ.setdefault("WORKER_BOOTSTRAP_TOKEN", "rrw_local-integration.local-integration-worker-token")
+os.environ.setdefault("WORKER_BOOTSTRAP_ID", "local-integration")
 os.environ.setdefault("AUTO_CREATE_SCHEMA", "false")
 
 from roborouter_api.main import app  # noqa: E402
@@ -25,9 +25,9 @@ def require_ok(response: httpx.Response) -> dict:
 
 
 def main() -> None:
-    token = os.environ["WORKER_TOKEN"]
+    token = os.environ["WORKER_BOOTSTRAP_TOKEN"]
     headers = {"Authorization": f"Bearer {token}"}
-    worker_id = f"integration-{uuid.uuid4()}"
+    worker_id = os.environ["WORKER_BOOTSTRAP_ID"]
     content = b"RoboRouter PostgreSQL + MinIO integration artifact\n"
     digest = hashlib.sha256(content).hexdigest()
 
@@ -62,7 +62,6 @@ def main() -> None:
             client.post(
                 f"/private/workers/jobs/{created['id']}/heartbeat",
                 headers=headers,
-                params={"worker_id": worker_id},
             )
         )
         grant = require_ok(
@@ -70,7 +69,6 @@ def main() -> None:
                 f"/private/workers/jobs/{created['id']}/artifacts/presign",
                 headers=headers,
                 json={
-                    "worker_id": worker_id,
                     "kind": "log",
                     "filename": "integration.log",
                     "media_type": "text/plain",
@@ -96,7 +94,7 @@ def main() -> None:
                 "evidence_note": "Executed by the local PostgreSQL and MinIO integration verifier.",
             }
         )
-        completion = {"worker_id": worker_id, "rollouts": [fixture]}
+        completion = {"rollouts": [fixture]}
         completed = require_ok(
             client.post(
                 f"/private/workers/jobs/{created['id']}/complete",

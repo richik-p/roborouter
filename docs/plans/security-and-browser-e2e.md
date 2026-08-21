@@ -1,11 +1,18 @@
-# Per-worker identity and browser E2E plan
+# Per-worker identity and browser E2E implementation
+
+Status as of 2026-08-20: the first implementation is in place. Worker credentials
+are database-backed and scope checked, claimed jobs retain the exact credential ID,
+revocation terminates active leases, and Playwright covers discovery, arm/UAV
+catalog behavior, policy and Rollout provenance, matched/non-matched Compare states,
+plus evaluation launch/cancellation. Rotation ergonomics and a browser-driven
+completed live-worker job remain follow-up work.
 
 ## Why this precedes broader exposure
 
-The current control plane accepts one deployment-wide worker token. That is enough
-for a restricted, single-worker smoke run, but it cannot identify, rotate, or revoke
-workers independently. Complete this milestone before adding a second worker or
-opening worker access beyond the restricted TLS hostname.
+The original control plane accepted one deployment-wide worker token. It now binds
+every credential to one worker and every lease to the exact credential that claimed
+it. Complete the remaining follow-up checks before opening worker access beyond the
+restricted TLS hostname.
 
 ## Per-worker credentials
 
@@ -30,7 +37,9 @@ Replace the global-token dependency with a `WorkerPrincipal` dependency. Enforce
 
 1. token exists, is unexpired, and is not revoked;
 2. requested endpoint scope is present;
-3. every body/query `worker_id` equals the principal's worker ID;
+3. registration and claim capability records use the principal's worker ID; all
+   lease operations derive identity from the principal instead of trusting a body or
+   query `worker_id`;
 4. a worker cannot heartbeat, presign, complete, fail, or cancel another worker's
    leased job;
 5. logs show credential ID and worker ID, never the raw token;
@@ -60,7 +69,8 @@ https://playwright.dev/docs/test-webserver.
 1. Add `@playwright/test` as a dev dependency and pin it in `package-lock.json`.
 2. Add `apps/web/playwright.config.ts` with API and web `webServer` entries, one
    Chromium project, trace-on-first-retry, and screenshots only on failure.
-3. Use a unique `/tmp/roborouter-e2e-<worker>.sqlite3`; never reuse the developer DB.
+3. Use an isolated `/tmp/roborouter-e2e.sqlite3`, deleted at suite startup; never
+   reuse the developer DB.
 4. Add stable accessible names or `data-testid` only where semantic selectors are
    insufficient.
 5. Add `npm run e2e`, `make e2e`, and a CI step after unit tests/build.

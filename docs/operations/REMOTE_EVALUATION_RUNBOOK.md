@@ -25,7 +25,6 @@ WORKER_DOMAIN          for example worker.roborouter.example
 ARTIFACT_DOMAIN        for example artifacts.roborouter.example
 OPERATOR_USERNAME      HTTP basic-auth username for the smoke UI
 OPERATOR_PASSWORD      generated high-entropy password, stored outside Git
-WORKER_TOKEN           32-byte random token, stored outside Git
 GPU_SSH_TARGET         for example ubuntu@gpu-host.example
 ```
 
@@ -94,7 +93,6 @@ S3_ACCESS_KEY=roborouter
 S3_SECRET_KEY=<minio-password>
 S3_BUCKET=roborouter-artifacts
 S3_VERIFY_UPLOADS=true
-WORKER_TOKEN=<WORKER_TOKEN>
 AUTO_CREATE_SCHEMA=false
 CORS_ORIGINS=["https://<APP_DOMAIN>"]
 ```
@@ -113,6 +111,22 @@ uv run alembic upgrade head
 uv run alembic check
 uv run roborouter-seed
 ```
+
+Create a credential specifically for this worker. The raw token is printed once;
+copy it directly into the password manager and the worker host's secret file:
+
+```bash
+uv run roborouter-worker-credentials create \
+  --worker-id gpu-worker-01 \
+  --label libero-smoke-01 \
+  --ttl-days 30
+uv run roborouter-worker-credentials list --worker-id gpu-worker-01
+```
+
+Do not place the printed token in the control-plane `.env`. The API stores only its
+SHA-256 digest. To revoke it, run
+`uv run roborouter-worker-credentials revoke <credential-id>`; any lease owned by
+that exact credential is failed and cannot be completed with a different token.
 
 Verify only loopback listeners exist:
 
@@ -310,7 +324,7 @@ Create `/opt/roborouter/.env.worker`, mode `0600`:
 
 ```dotenv
 API_BASE_URL=https://<WORKER_DOMAIN>
-WORKER_TOKEN=<WORKER_TOKEN>
+WORKER_TOKEN=<rrw_... token printed once by the control-plane credential command>
 WORKER_ID=gpu-worker-01
 GPU_NAME=<exact nvidia-smi name>
 VRAM_GB=<integer GiB>

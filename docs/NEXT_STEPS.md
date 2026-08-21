@@ -4,10 +4,10 @@ The GitHub remote is active at `git@github.com:richik-p/roborouter.git`. Execute
 remaining work in this order; the order deliberately puts the internet-facing safety
 boundary before the expensive GPU run.
 
-1. **Harden the worker identity boundary and add browser E2E tests.** Follow
-   [`plans/security-and-browser-e2e.md`](plans/security-and-browser-e2e.md). Do not
-   expose the API to the public internet until the token-isolation tests pass, unless
-   using the restricted, single-worker smoke topology below.
+1. **Finish the worker-identity and browser-E2E follow-ups.** The first scoped-token
+   implementation, isolation tests, and core browser journeys now exist. Follow the
+   remaining items in [`plans/security-and-browser-e2e.md`](plans/security-and-browser-e2e.md),
+   especially expiry/rotation and a completed live-worker browser journey.
 2. **Deploy the TLS control plane and provision the NVIDIA worker.** Follow
    [`operations/REMOTE_EVALUATION_RUNBOOK.md`](operations/REMOTE_EVALUATION_RUNBOOK.md).
 3. **Run one π₀.₅/LIBERO Object episode.** Complete and sign off

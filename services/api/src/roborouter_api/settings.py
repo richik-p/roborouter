@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     s3_secret_key: str = "roborouter-local-only"
     s3_bucket: str = "roborouter-artifacts"
     s3_verify_uploads: bool = True
-    worker_token: str = "local-worker-token-change-me"
+    worker_bootstrap_token: str | None = None
+    worker_bootstrap_id: str = "local-worker"
     worker_lease_seconds: int = 90
     auto_create_schema: bool = False
     catalog_root: Path = Path(__file__).resolve().parents[4] / "catalog"

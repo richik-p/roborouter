@@ -208,6 +208,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v0/evaluations/{job_id}/rollouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Evaluation Rollouts */
+        get: operations["list_evaluation_rollouts_v0_evaluations__job_id__rollouts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v0/policies": {
         parameters: {
             query?: never;
@@ -362,8 +379,6 @@ export interface components {
             sha256: string;
             /** Size Bytes */
             size_bytes: number;
-            /** Worker Id */
-            worker_id: string;
         };
         /** ArtifactUploadGrant */
         ArtifactUploadGrant: {
@@ -854,8 +869,6 @@ export interface components {
         WorkerCompletion: {
             /** Rollouts */
             rollouts: components["schemas"]["Rollout"][];
-            /** Worker Id */
-            worker_id: string;
         };
         /** WorkerFailure */
         WorkerFailure: {
@@ -871,8 +884,6 @@ export interface components {
              * @default false
              */
             retry_safe: boolean;
-            /** Worker Id */
-            worker_id: string;
         };
     };
     responses: never;
@@ -1053,9 +1064,7 @@ export interface operations {
     };
     heartbeat_private_workers_jobs__job_id__heartbeat_post: {
         parameters: {
-            query: {
-                worker_id: string;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
             };
@@ -1269,6 +1278,37 @@ export interface operations {
             };
         };
     };
+    list_evaluation_rollouts_v0_evaluations__job_id__rollouts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolloutListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_policies_v0_policies_get: {
         parameters: {
             query?: {
@@ -1356,7 +1396,11 @@ export interface operations {
     };
     list_rollouts_v0_rollouts_get: {
         parameters: {
-            query?: never;
+            query?: {
+                policy_id?: string | null;
+                environment_id?: string | null;
+                task_profile_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1370,6 +1414,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RolloutListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

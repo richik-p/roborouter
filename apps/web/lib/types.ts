@@ -47,7 +47,9 @@ export type Rollout = {
   policy_spec_id: string;
   policy_revision: string;
   robot_profile_id: string;
+  robot_revision: string;
   task_profile_id: string;
+  task_revision: string;
   environment_id: string;
   environment_revision: string;
   seed: number;
@@ -74,7 +76,7 @@ export type EvaluationJob = {
   };
   created_at: string;
   updated_at: string;
+  worker_id: string | null;
   failure_kind: string | null;
   failure_detail: string | null;
 };
-

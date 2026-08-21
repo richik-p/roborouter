@@ -158,14 +158,9 @@
             "minimum": 0.0,
             "title": "Size Bytes",
             "type": "integer"
-          },
-          "worker_id": {
-            "title": "Worker Id",
-            "type": "string"
           }
         },
         "required": [
-          "worker_id",
           "kind",
           "filename",
           "media_type",
@@ -1592,14 +1587,9 @@
             "minItems": 1,
             "title": "Rollouts",
             "type": "array"
-          },
-          "worker_id": {
-            "title": "Worker Id",
-            "type": "string"
           }
         },
         "required": [
-          "worker_id",
           "rollouts"
         ],
         "title": "WorkerCompletion",
@@ -1625,14 +1615,9 @@
             "default": false,
             "title": "Retry Safe",
             "type": "boolean"
-          },
-          "worker_id": {
-            "title": "Worker Id",
-            "type": "string"
           }
         },
         "required": [
-          "worker_id",
           "kind",
           "detail"
         ],
@@ -1943,15 +1928,6 @@
             }
           },
           {
-            "in": "query",
-            "name": "worker_id",
-            "required": true,
-            "schema": {
-              "title": "Worker Id",
-              "type": "string"
-            }
-          },
-          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -2225,6 +2201,45 @@
         "summary": "Cancel Evaluation"
       }
     },
+    "/v0/evaluations/{job_id}/rollouts": {
+      "get": {
+        "operationId": "list_evaluation_rollouts_v0_evaluations__job_id__rollouts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolloutListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Evaluation Rollouts"
+      }
+    },
     "/v0/policies": {
       "get": {
         "operationId": "list_policies_v0_policies_get",
@@ -2379,6 +2394,56 @@
     "/v0/rollouts": {
       "get": {
         "operationId": "list_rollouts_v0_rollouts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "policy_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Policy Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "environment_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task_profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Profile Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -2389,6 +2454,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Rollouts"

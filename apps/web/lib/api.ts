@@ -23,9 +23,24 @@ export async function listPolicies(query = ""): Promise<Policy[]> {
 export const getPolicy = (id: string) => request<Policy>(`/v0/policies/${id}`);
 export const listRobots = async () => (await request<{ items: Robot[] }>("/v0/robots")).items;
 export const listTasks = async () => (await request<{ items: Task[] }>("/v0/tasks")).items;
-export const listRollouts = async () => (await request<{ items: Rollout[] }>("/v0/rollouts")).items;
+export async function listRollouts(filters?: {
+  policyId?: string;
+  environmentId?: string;
+  taskProfileId?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.policyId) params.set("policy_id", filters.policyId);
+  if (filters?.environmentId) params.set("environment_id", filters.environmentId);
+  if (filters?.taskProfileId) params.set("task_profile_id", filters.taskProfileId);
+  const query = params.size ? `?${params}` : "";
+  return (await request<{ items: Rollout[] }>(`/v0/rollouts${query}`)).items;
+}
 export const getRollout = (id: string) => request<Rollout>(`/v0/rollouts/${id}`);
 export const getEvaluation = (id: string) => request<EvaluationJob>(`/v0/evaluations/${id}`);
+export const cancelEvaluation = (id: string) =>
+  request<EvaluationJob>(`/v0/evaluations/${id}/cancel`, { method: "POST" });
+export const listEvaluationRollouts = async (id: string) =>
+  (await request<{ items: Rollout[] }>(`/v0/evaluations/${id}/rollouts`)).items;
 
 export function queryCompatibility(robot: Robot, task: Task, policyIds?: string[]) {
   return request<Compatibility[]>("/v0/compatibility/queries", {

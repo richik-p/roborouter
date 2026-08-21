@@ -1,0 +1,22 @@
+[Unit]
+Description=RoboRouter API control plane
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=roborouter
+Group=roborouter
+WorkingDirectory=/opt/roborouter
+EnvironmentFile=/etc/roborouter/control-plane.env
+ExecStart=/opt/roborouter/.venv/bin/uvicorn roborouter_api.main:app --app-dir services/api/src --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -12,6 +12,10 @@ from .db_models import EvaluationJobRow, WorkerCredentialRow
 from .worker_auth import WORKER_SCOPES, hash_worker_token
 
 
+def _aware(value: datetime) -> datetime:
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
 async def create_worker_credential(
     worker_id: str,
     *,
@@ -64,6 +68,45 @@ async def list_worker_credentials(worker_id: str | None = None) -> list[WorkerCr
         return list((await session.scalars(statement)).all())
 
 
+async def rotate_worker_credential(
+    credential_id: str,
+    *,
+    overlap_minutes: int,
+    ttl_days: int = 30,
+    label: str | None = None,
+) -> tuple[WorkerCredentialRow, WorkerCredentialRow, str]:
+    if overlap_minutes <= 0:
+        raise ValueError("overlap minutes must be positive; use revoke for an immediate cutoff")
+    if ttl_days <= 0:
+        raise ValueError("ttl days must be positive")
+    now = datetime.now(UTC)
+    overlap_expires_at = now + timedelta(minutes=overlap_minutes)
+    new_credential_id = secrets.token_hex(8)
+    token = f"rrw_{new_credential_id}.{secrets.token_urlsafe(32)}"
+    async with SessionLocal() as session:
+        old = await session.get(WorkerCredentialRow, credential_id, with_for_update=True)
+        if old is None:
+            raise ValueError("worker credential not found")
+        if old.revoked_at is not None or (old.expires_at is not None and _aware(old.expires_at) <= now):
+            raise ValueError("only an active worker credential can be rotated")
+        if old.expires_at is None or _aware(old.expires_at) > overlap_expires_at:
+            old.expires_at = overlap_expires_at
+        new = WorkerCredentialRow(
+            credential_id=new_credential_id,
+            worker_id=old.worker_id,
+            token_hash=hash_worker_token(token),
+            scopes=list(old.scopes),
+            label=label or f"rotation of {old.label or old.credential_id}",
+            created_at=now,
+            expires_at=now + timedelta(days=ttl_days),
+            revoked_at=None,
+            last_used_at=None,
+        )
+        session.add(new)
+        await session.commit()
+        return old, new, token
+
+
 async def revoke_worker_credential(credential_id: str) -> WorkerCredentialRow:
     now = datetime.now(UTC)
     async with SessionLocal() as session:
@@ -101,6 +144,11 @@ def _parser() -> argparse.ArgumentParser:
     create.add_argument("--ttl-days", type=int)
     listing = subparsers.add_parser("list")
     listing.add_argument("--worker-id")
+    rotate = subparsers.add_parser("rotate")
+    rotate.add_argument("credential_id")
+    rotate.add_argument("--overlap-minutes", type=int, required=True)
+    rotate.add_argument("--ttl-days", type=int, default=30)
+    rotate.add_argument("--label")
     revoke = subparsers.add_parser("revoke")
     revoke.add_argument("credential_id")
     return parser
@@ -125,6 +173,19 @@ async def _main() -> None:
                 f"{row.credential_id}\t{row.worker_id}\t{','.join(row.scopes)}\t"
                 f"expires={row.expires_at or '-'}\trevoked={row.revoked_at or '-'}\tlabel={row.label or '-'}"
             )
+    elif args.command == "rotate":
+        old, new, token = await rotate_worker_credential(
+            args.credential_id,
+            overlap_minutes=args.overlap_minutes,
+            ttl_days=args.ttl_days,
+            label=args.label,
+        )
+        print(f"old_credential_id={old.credential_id}")
+        print(f"old_expires_at={old.expires_at}")
+        print(f"credential_id={new.credential_id}")
+        print(f"worker_id={new.worker_id}")
+        print(f"token={token}")
+        print("Replace the worker token before the overlap expires; the new token cannot take over old leases.")
     else:
         row = await revoke_worker_credential(args.credential_id)
         print(f"revoked credential_id={row.credential_id} worker_id={row.worker_id}")

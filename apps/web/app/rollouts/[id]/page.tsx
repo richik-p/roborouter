@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Database, Fingerprint } from "lucide-react";
+import { ArrowLeft, Check, Database, FileCheck2, Fingerprint } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getRollout } from "@/lib/api";
@@ -30,8 +30,8 @@ export default function RolloutDetail() {
         <section className="panel"><h2><Fingerprint size={17} /> Policy and task</h2><div className="kv"><span>Policy</span><code>{rollout.policy_spec_id}</code></div><div className="kv"><span>Revision</span><code>{rollout.policy_revision}</code></div><div className="kv"><span>Robot</span><code>{rollout.robot_profile_id}</code></div><div className="kv"><span>Task</span><code>{rollout.task_profile_id}</code></div></section>
         <section className="panel"><h2><Database size={17} /> Runtime identity</h2>{Object.entries(rollout.runtime_identity).map(([key, value]) => <div className="kv" key={key}><span>{key}</span><code>{value}</code></div>)}</section>
         <section className="panel full"><h2>Environment</h2><div className="kv"><span>Environment</span><code>{rollout.environment_id}</code></div><div className="kv"><span>Revision</span><code>{rollout.environment_revision}</code></div><div className="kv"><span>Seed</span><code>{rollout.seed}</code></div><div className="kv"><span>Mode</span><span className="tag blue">{rollout.mode}</span></div></section>
+        <section className="panel full"><h2><FileCheck2 size={17} /> Immutable artifacts</h2>{rollout.artifacts.length ? rollout.artifacts.map((artifact) => <div className="kv" key={artifact.id}><span>{artifact.kind} · {artifact.size_bytes} bytes</span><code title={artifact.uri}>{artifact.sha256}</code></div>) : <p>No artifacts are attached to this Rollout.</p>}</section>
       </div>
     </article>
   );
 }
-

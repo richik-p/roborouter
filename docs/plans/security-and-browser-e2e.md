@@ -1,11 +1,12 @@
 # Per-worker identity and browser E2E implementation
 
-Status as of 2026-08-20: the first implementation is in place. Worker credentials
+Status as of 2026-08-20: this pre-deployment milestone is implemented. Worker credentials
 are database-backed and scope checked, claimed jobs retain the exact credential ID,
 revocation terminates active leases, and Playwright covers discovery, arm/UAV
 catalog behavior, policy and Rollout provenance, matched/non-matched Compare states,
-plus evaluation launch/cancellation. Rotation ergonomics and a browser-driven
-completed live-worker job remain follow-up work.
+plus evaluation launch/cancellation and deterministic worker completion with artifact
+provenance. Rotation creates a new token with an explicit bounded overlap while
+leaving old leases bound to the old credential.
 
 ## Why this precedes broader exposure
 
@@ -47,6 +48,18 @@ Replace the global-token dependency with a `WorkerPrincipal` dependency. Enforce
 
 Add operator CLI commands for create, list metadata, rotate, and revoke. Operator
 credentials must not be exposed through the public worker hostname.
+
+Rotation is explicit:
+
+```bash
+uv run roborouter-worker-credentials rotate <old-credential-id> \
+  --overlap-minutes 15 \
+  --ttl-days 30 \
+  --label gpu-worker-01-rotation
+```
+
+Install the printed token before `old_expires_at`. Existing leases remain owned by
+the old credential and cannot be taken over by the new credential.
 
 ### Acceptance tests
 
@@ -101,5 +114,5 @@ launch buttons alone do not satisfy the M3 comparison acceptance criterion.
 - all identity isolation tests pass against PostgreSQL;
 - browser E2E passes locally and in GitHub Actions;
 - no test requires CUDA or external network access;
-- M3-03 remains open until completed matched results—not just queued jobs—render side
-  by side.
+- M3-03 remains open for a real remote matched run; completed fixture results already
+  render side by side and are explicitly labeled as upstream aggregate context.

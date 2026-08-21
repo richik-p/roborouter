@@ -87,10 +87,13 @@ Create `/opt/roborouter/.env`, mode `0600`:
 
 ```dotenv
 DATABASE_URL=postgresql+asyncpg://roborouter:<database-password>@127.0.0.1:5432/roborouter
+POSTGRES_PASSWORD=<same-database-password>
 S3_ENDPOINT_URL=http://127.0.0.1:9000
 S3_PUBLIC_ENDPOINT_URL=https://<ARTIFACT_DOMAIN>
 S3_ACCESS_KEY=roborouter
 S3_SECRET_KEY=<minio-password>
+MINIO_ROOT_USER=roborouter
+MINIO_ROOT_PASSWORD=<same-minio-password>
 S3_BUCKET=roborouter-artifacts
 S3_VERIFY_UPLOADS=true
 AUTO_CREATE_SCHEMA=false
@@ -105,8 +108,14 @@ checked-in values are development-only.
 
 ```bash
 cd /opt/roborouter
-docker compose -f infra/compose.yml up -d --wait postgres minio
-docker compose -f infra/compose.yml run --rm minio-init
+docker compose \
+  -f infra/compose.yml \
+  -f infra/compose.production.yml \
+  up -d --wait postgres minio
+docker compose \
+  -f infra/compose.yml \
+  -f infra/compose.production.yml \
+  run --rm minio-init
 uv run alembic upgrade head
 uv run alembic check
 uv run roborouter-seed
@@ -149,20 +158,21 @@ npm run build
 
 ### 6. Run API and web as services
 
-Create systemd units using these command boundaries:
+Install the reviewed systemd templates:
 
-```text
-API working directory: /opt/roborouter
-API environment file:  /opt/roborouter/.env
-API command:            /opt/roborouter/.venv/bin/uvicorn roborouter_api.main:app
-                        --app-dir services/api/src --host 127.0.0.1 --port 8000
-
-Web working directory:  /opt/roborouter
-Web command:            /usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+```bash
+sudo install -d -m 0750 -o root -g roborouter /etc/roborouter
+sudo install -m 0644 infra/systemd/roborouter-api.service /etc/systemd/system/
+sudo install -m 0644 infra/systemd/roborouter-web.service /etc/systemd/system/
+sudo install -m 0640 -o root -g roborouter .env /etc/roborouter/control-plane.env
+sudo systemctl daemon-reload
+sudo systemctl enable --now roborouter-api roborouter-web
+sudo systemctl status roborouter-api roborouter-web --no-pager
 ```
 
 Run both as an unprivileged `roborouter` service account, set `Restart=on-failure`,
-and use `UMask=0077`. Never put the worker token directly in a unit file.
+and use `UMask=0077`. The checked-in units also enable basic systemd filesystem and
+privilege hardening. Never put a worker token directly in a unit file.
 
 Check locally before adding TLS:
 
@@ -176,45 +186,24 @@ curl --fail http://127.0.0.1:3000/
 Caddy obtains and renews certificates automatically when DNS points to the host and
 ports 80/443 are reachable. See https://caddyserver.com/docs/quick-starts/reverse-proxy.
 
-Generate the operator password hash with `caddy hash-password` and store it in
-Caddy's protected environment as `OPERATOR_PASSWORD_HASH`. Use this Caddyfile:
+Generate the operator password hash with `caddy hash-password`. Install the reviewed
+[`../../infra/caddy/Caddyfile.example`](../../infra/caddy/Caddyfile.example) and give
+the Caddy service a protected environment file:
 
-```caddyfile
-<APP_DOMAIN> {
-    basic_auth {
-        <OPERATOR_USERNAME> {$OPERATOR_PASSWORD_HASH}
-    }
+```bash
+sudo install -m 0644 infra/caddy/Caddyfile.example /etc/caddy/Caddyfile
+sudo install -m 0640 -o root -g caddy /dev/null /etc/roborouter/caddy.env
+sudoedit /etc/roborouter/caddy.env
+sudo systemctl edit caddy
+```
 
-    @api path /health /v0/*
-    handle @api {
-        reverse_proxy 127.0.0.1:8000
-    }
+The Caddy environment file must define `APP_DOMAIN`, `WORKER_DOMAIN`,
+`ARTIFACT_DOMAIN`, `OPERATOR_USERNAME`, and `OPERATOR_PASSWORD_HASH`. The systemd
+override created by `systemctl edit caddy` must contain:
 
-    handle {
-        reverse_proxy 127.0.0.1:3000
-    }
-}
-
-<WORKER_DOMAIN> {
-    @worker_api path /private/workers/*
-    handle @worker_api {
-        reverse_proxy 127.0.0.1:8000
-    }
-
-    @job_status {
-        method GET
-        path /v0/evaluations/*
-    }
-    handle @job_status {
-        reverse_proxy 127.0.0.1:8000
-    }
-
-    respond 404
-}
-
-<ARTIFACT_DOMAIN> {
-    reverse_proxy 127.0.0.1:9000
-}
+```ini
+[Service]
+EnvironmentFile=/etc/roborouter/caddy.env
 ```
 
 Validate and reload:
@@ -346,9 +335,20 @@ uv run roborouter-worker
 ```
 
 Confirm registration in control-plane logs. Then install the same command as an
-unprivileged systemd service with `Restart=on-failure`, `UMask=0077`, and
-`EnvironmentFile=/opt/roborouter/.env.worker`. The worker needs outbound TCP 443 and
-registry/model-download access; it needs no inbound application port.
+unprivileged systemd service using the checked-in template:
+
+```bash
+sudo install -d -m 0750 -o root -g roborouter-worker /etc/roborouter
+sudo install -m 0640 -o root -g roborouter-worker .env.worker /etc/roborouter/worker.env
+sudo install -m 0644 infra/systemd/roborouter-worker.service /etc/systemd/system/
+sudo install -d -m 0750 -o roborouter-worker -g roborouter-worker /var/lib/roborouter-worker
+sudo systemctl daemon-reload
+sudo systemctl enable --now roborouter-worker
+sudo systemctl status roborouter-worker --no-pager
+```
+
+The worker needs outbound TCP 443 and registry/model-download access; it needs no
+inbound application port.
 
 ## Phase 3 — one π₀.₅/LIBERO Object episode
 

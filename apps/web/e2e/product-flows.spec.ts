@@ -63,3 +63,74 @@ test("launches and cancels a queued evaluation", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "canceled" })).toBeVisible();
   await expect(page.getByText("Evaluation canceled", { exact: true })).toBeVisible();
 });
+
+test("persists a worker completion and links its immutable artifact", async ({ page, request }) => {
+  const apiBase = "http://127.0.0.1:8100";
+  const workerHeaders = { Authorization: "Bearer rrw_e2e-worker.e2e-only-secret" };
+  const capabilities = {
+    worker_id: "e2e-worker",
+    cuda: true,
+    gpu_name: "deterministic-e2e-fixture",
+    vram_gb: 80,
+    adapters: ["vla_eval_lerobot"],
+    environments: ["vla-eval-libero-object"],
+  };
+
+  await page.goto("/policies/pi05-libero");
+  await page.getByRole("button", { name: "Run LIBERO eval" }).click();
+  await expect(page).toHaveURL(/\/evaluations\/eval-/);
+  const jobId = page.url().split("/").at(-1)!;
+
+  const registration = await request.post(`${apiBase}/private/workers/register`, {
+    headers: workerHeaders,
+    data: capabilities,
+  });
+  expect(registration.ok()).toBeTruthy();
+  const claim = await request.post(`${apiBase}/private/workers/claim`, {
+    headers: workerHeaders,
+    data: capabilities,
+  });
+  expect(claim.ok()).toBeTruthy();
+  expect((await claim.json()).id).toBe(jobId);
+  const heartbeat = await request.post(`${apiBase}/private/workers/jobs/${jobId}/heartbeat`, {
+    headers: workerHeaders,
+  });
+  expect(heartbeat.ok()).toBeTruthy();
+
+  const grant = await request.post(`${apiBase}/private/workers/jobs/${jobId}/artifacts/presign`, {
+    headers: workerHeaders,
+    data: {
+      kind: "log",
+      filename: "e2e-result.log",
+      media_type: "text/plain",
+      sha256: "b".repeat(64),
+      size_bytes: 18,
+    },
+  });
+  expect(grant.ok()).toBeTruthy();
+  const grantedArtifact = (await grant.json()).artifact;
+  const fixtureResponse = await request.get(`${apiBase}/v0/rollouts/rollout-upstream-pi05-libero-object`);
+  const fixture = await fixtureResponse.json();
+  const rolloutId = `rollout-${jobId}`;
+  const completion = await request.post(`${apiBase}/private/workers/jobs/${jobId}/complete`, {
+    headers: workerHeaders,
+    data: {
+      rollouts: [{
+        ...fixture,
+        id: rolloutId,
+        evaluation_job_id: jobId,
+        metrics: { success_rate: 1 },
+        artifacts: [grantedArtifact],
+        evidence_note: "Executed by the deterministic browser E2E fixture worker.",
+      }],
+    },
+  });
+  expect(completion.ok()).toBeTruthy();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "succeeded" })).toBeVisible();
+  await page.getByRole("link", { name: rolloutId }).click();
+  await expect(page.getByText("Executed by the deterministic browser E2E fixture worker.")).toBeVisible();
+  await expect(page.getByText("b".repeat(64))).toBeVisible();
+  await expect(page.getByText("log · 18 bytes")).toBeVisible();
+});

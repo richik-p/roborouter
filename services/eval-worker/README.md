@@ -50,6 +50,17 @@ VLA_EVAL_ROOT=vendor/vla-evaluation-harness
 WORKER_OUTPUT_ROOT=artifacts/worker
 ```
 
+Rotate without transferring active leases:
+
+```bash
+uv run roborouter-worker-credentials rotate <old-credential-id> \
+  --overlap-minutes 15 --ttl-days 30 --label gpu-worker-01-rotation
+```
+
+Replace `WORKER_TOKEN` and restart the worker before the printed overlap deadline.
+The old token may finish its existing lease during that window; the new token cannot
+take the lease over.
+
 Start the process with `make worker`. The adapter refuses missing pinned config files
 or an unavailable `vla-eval` executable rather than inferring a runtime path. Before
 launch it resolves the checkpoint at the recorded commit and materializes a derived

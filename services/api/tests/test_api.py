@@ -5,7 +5,11 @@ from fastapi.testclient import TestClient
 from roborouter_api.database import SessionLocal
 from roborouter_api.db_models import WorkerCredentialRow
 from roborouter_api.main import app
-from roborouter_api.worker_credentials import create_worker_credential, revoke_worker_credential
+from roborouter_api.worker_credentials import (
+    create_worker_credential,
+    revoke_worker_credential,
+    rotate_worker_credential,
+)
 
 
 def _evaluation_payload(seed: int) -> dict:
@@ -319,6 +323,50 @@ def test_revoking_a_credential_terminates_its_active_lease() -> None:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert rejected_heartbeat.status_code == 401
+
+
+def test_rotation_allows_a_bounded_overlap_without_transferring_the_lease() -> None:
+    old_token = "rrw_rotation-old.old-secret"
+    with TestClient(app) as client:
+        asyncio.run(
+            create_worker_credential(
+                "rotation-gpu",
+                credential_id="rotation-old",
+                token=old_token,
+            )
+        )
+        created = client.post("/v0/evaluations", json=_evaluation_payload(29))
+        claimed = client.post(
+            "/private/workers/claim",
+            headers={"Authorization": f"Bearer {old_token}"},
+            json=_capabilities("rotation-gpu"),
+        )
+        assert claimed.status_code == 200
+        assert claimed.json()["id"] == created.json()["id"]
+
+        old, new, new_token = asyncio.run(
+            rotate_worker_credential(
+                "rotation-old",
+                overlap_minutes=5,
+                ttl_days=30,
+                label="rotation-new",
+            )
+        )
+        assert old.expires_at is not None
+        assert old.expires_at <= datetime.now(UTC) + timedelta(minutes=5)
+        assert new.worker_id == "rotation-gpu"
+
+        old_still_owns_lease = client.post(
+            f"/private/workers/jobs/{created.json()['id']}/heartbeat",
+            headers={"Authorization": f"Bearer {old_token}"},
+        )
+        assert old_still_owns_lease.status_code == 200
+
+        new_cannot_take_over = client.post(
+            f"/private/workers/jobs/{created.json()['id']}/heartbeat",
+            headers={"Authorization": f"Bearer {new_token}"},
+        )
+        assert new_cannot_take_over.status_code == 409
 
 
 def test_queued_evaluation_can_be_canceled() -> None:

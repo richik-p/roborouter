@@ -39,7 +39,14 @@ export type Compatibility = {
   supported_paths: { simulate: boolean; shadow: boolean; actuate: boolean };
 };
 
-export type Artifact = { id: string; kind: string; uri: string; media_type: string };
+export type Artifact = {
+  id: string;
+  kind: string;
+  uri: string;
+  media_type: string;
+  sha256: string;
+  size_bytes: number;
+};
 export type Rollout = {
   id: string;
   evaluation_job_id: string | null;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, Play, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import LaunchKeyField from "@/components/launch-key-field";
 import { createEvaluation, getPolicy, listRollouts } from "@/lib/api";
 import type { EvaluationJob, Policy, Rollout } from "@/lib/types";
 
@@ -79,6 +80,7 @@ export default function Compare() {
       <h1>Compare execution identities, not names.</h1>
       <p className="detail-lead">π₀.₅ and MolmoAct2 share the LIBERO Goal protocol. Results are matched only when the immutable environment and task revisions, seed, harness, container, evaluator contract, and protocol agree.</p>
       {error && <div className="error">{error}</div>}
+      <div className="launch-controls" style={{ alignItems: "flex-start", marginBottom: 18 }}><LaunchKeyField /></div>
       <div className={`evidence-note ${matched ? "" : "error"}`} style={{ marginBottom: 18 }}>
         {matched ? <><CheckCircle2 size={16} /> <strong>Matched result set</strong> — both displayed records use the exact same evaluation identity.</> : <><TriangleAlert size={16} /> <strong>Non-comparable</strong> — both exact result identities are required.</>}
       </div>

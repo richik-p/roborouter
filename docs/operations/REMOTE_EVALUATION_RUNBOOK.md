@@ -98,6 +98,9 @@ S3_BUCKET=roborouter-artifacts
 S3_VERIFY_UPLOADS=true
 AUTO_CREATE_SCHEMA=false
 CORS_ORIGINS=["https://<APP_DOMAIN>"]
+EVALUATION_ACCESS=key
+MAX_ACTIVE_EVALUATIONS=1
+MAX_SEEDS_PER_EVALUATION=10
 ```
 
 Replace the matching development passwords in `infra/compose.yml` through a local
@@ -136,6 +139,23 @@ Do not place the printed token in the control-plane `.env`. The API stores only 
 SHA-256 digest. To revoke it, run
 `uv run roborouter-worker-credentials revoke <credential-id>`; any lease owned by
 that exact credential is failed and cannot be completed with a different token.
+
+Evaluation launches are closed by default (`EVALUATION_ACCESS=key`). Create the
+operator launch key that the smoke UI and `curl` requests will present, and store it
+the same way:
+
+```bash
+uv run roborouter-launch-credentials create \
+  --role operator \
+  --label smoke-operator \
+  --ttl-days 30
+uv run roborouter-launch-credentials list
+```
+
+Per-user keys for invited testers use `--role user` with explicit
+`--concurrent-limit` and `--daily-limit`; `revoke <credential-id>` cancels that key's
+in-flight jobs. `MAX_ACTIVE_EVALUATIONS=1` keeps the single smoke worker from ever
+holding a backlog.
 
 Verify only loopback listeners exist:
 
@@ -354,11 +374,13 @@ inbound application port.
 
 ### 1. Create the job
 
-Use the password-protected web policy page, or make the exact same request while
-letting `curl` prompt for the operator password:
+Use the password-protected web policy page (paste the launch key into its
+**Access key** field), or make the exact same request while letting `curl` prompt
+for the operator password:
 
 ```bash
 curl --user <OPERATOR_USERNAME> \
+  --header 'Authorization: Bearer <LAUNCH_KEY>' \
   --header 'Content-Type: application/json' \
   --data '{
     "policy_id":"pi05-libero",
@@ -377,6 +399,7 @@ If cancellation is necessary:
 
 ```bash
 curl --user <OPERATOR_USERNAME> --request POST \
+  --header 'Authorization: Bearer <LAUNCH_KEY>' \
   https://<APP_DOMAIN>/v0/evaluations/<EVALUATION_ID>/cancel
 ```
 
@@ -431,5 +454,5 @@ After evidence is uploaded and verified:
 2. confirm no evaluation remains `CLAIMED` or `RUNNING`;
 3. preserve the evidence record and hashes;
 4. terminate the billable GPU instance rather than merely logging out;
-5. rotate/revoke the smoke worker token;
+5. rotate/revoke the smoke worker token and the smoke launch key;
 6. keep PostgreSQL/MinIO backups before changing revisions.

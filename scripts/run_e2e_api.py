@@ -15,6 +15,8 @@ def main() -> None:
     os.environ["S3_PUBLIC_ENDPOINT_URL"] = "https://artifacts.example.test"
     os.environ["WORKER_BOOTSTRAP_TOKEN"] = "rrw_e2e-worker.e2e-only-secret"
     os.environ["WORKER_BOOTSTRAP_ID"] = "e2e-worker"
+    os.environ["LAUNCH_BOOTSTRAP_TOKEN"] = "rrl_e2e-launch.e2e-only-secret"
+    os.environ["LAUNCH_BOOTSTRAP_ROLE"] = "operator"
     os.environ["CORS_ORIGINS"] = '["http://127.0.0.1:3100"]'
     uvicorn.run("roborouter_api.main:app", app_dir="services/api/src", host="127.0.0.1", port=8100)
 

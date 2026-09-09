@@ -46,6 +46,7 @@ from .db_models import (
     TaskRow,
     WorkerRow,
 )
+from .launch_auth import LaunchPrincipal, launch_principal
 from .seed import seed_database
 from .settings import get_settings
 from .worker_auth import WorkerPrincipal, require_worker_scope
@@ -74,6 +75,7 @@ app.add_middleware(
 )
 
 Session = Annotated[AsyncSession, Depends(get_session)]
+Launch = Annotated[LaunchPrincipal | None, Depends(launch_principal)]
 
 
 class PolicyListResponse(BaseModel):
@@ -154,6 +156,47 @@ def _job(row: EvaluationJobRow) -> EvaluationJob:
         failure_detail=row.failure_detail,
         retry_safe=row.retry_safe,
     )
+
+
+ACTIVE_EVALUATION_STATES = (
+    EvaluationState.QUEUED.value,
+    EvaluationState.CLAIMED.value,
+    EvaluationState.RUNNING.value,
+)
+
+
+async def _count_jobs(session: AsyncSession, *conditions) -> int:
+    statement = select(func.count()).select_from(EvaluationJobRow).where(*conditions)
+    return int(await session.scalar(statement) or 0)
+
+
+async def _enforce_launch_quotas(session: AsyncSession, launch: LaunchPrincipal | None, now: datetime) -> None:
+    """Apply the global active-job cap and the per-key quotas before queueing a job.
+
+    The counts are advisory under concurrent requests: the cap bounds spend, it is not
+    a strict invariant. Operators skip per-key quotas but never the global cap.
+    """
+    active = await _count_jobs(session, EvaluationJobRow.state.in_(ACTIVE_EVALUATION_STATES))
+    if active >= settings.max_active_evaluations:
+        raise HTTPException(status_code=429, detail="evaluation capacity is full; retry when a running job completes")
+    if launch is None or launch.is_operator:
+        return
+    owned = EvaluationJobRow.launch_credential_id == launch.credential_id
+    owned_active = await _count_jobs(session, owned, EvaluationJobRow.state.in_(ACTIVE_EVALUATION_STATES))
+    if owned_active >= launch.concurrent_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"this launch key already has {owned_active} active evaluation(s); "
+                f"its limit is {launch.concurrent_limit}"
+            ),
+        )
+    recent = await _count_jobs(session, owned, EvaluationJobRow.created_at >= now - timedelta(days=1))
+    if recent >= launch.daily_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"this launch key reached its 24-hour limit of {launch.daily_limit} evaluations",
+        )
 
 
 def _canonical_digest(value: object) -> bytes:
@@ -332,7 +375,12 @@ async def compatibility_query(query: CompatibilityQuery, session: Session) -> li
 
 
 @app.post("/v0/evaluations", response_model=EvaluationJob, status_code=201)
-async def create_evaluation(request: EvaluationJobCreate, session: Session) -> EvaluationJob:
+async def create_evaluation(request: EvaluationJobCreate, session: Session, launch: Launch) -> EvaluationJob:
+    if len(request.seeds) > settings.max_seeds_per_evaluation:
+        raise HTTPException(
+            status_code=422,
+            detail=f"at most {settings.max_seeds_per_evaluation} seeds per evaluation",
+        )
     policy = await session.scalar(
         select(PolicyRow).where(
             PolicyRow.policy_id == request.policy_id,
@@ -365,11 +413,13 @@ async def create_evaluation(request: EvaluationJobCreate, session: Session) -> E
     if spec.actions is None or spec.actions.schema_id != environment_spec.action_schema:
         raise HTTPException(status_code=422, detail="policy action schema does not match environment")
     now = datetime.now(UTC)
+    await _enforce_launch_quotas(session, launch, now)
     row = EvaluationJobRow(
         job_id=f"eval-{uuid.uuid4()}",
         state=EvaluationState.QUEUED.value,
         request=request.model_dump(mode="json"),
         worker_id=None,
+        launch_credential_id=launch.credential_id if launch is not None else None,
         lease_expires_at=None,
         failure_kind=None,
         failure_detail=None,
@@ -391,10 +441,12 @@ async def get_evaluation(job_id: str, session: Session) -> EvaluationJob:
 
 
 @app.post("/v0/evaluations/{job_id}/cancel", response_model=EvaluationJob)
-async def cancel_evaluation(job_id: str, session: Session) -> EvaluationJob:
+async def cancel_evaluation(job_id: str, session: Session, launch: Launch) -> EvaluationJob:
     row = await session.get(EvaluationJobRow, job_id, with_for_update=True)
     if row is None:
         raise HTTPException(status_code=404, detail="evaluation not found")
+    if launch is not None and not launch.is_operator and row.launch_credential_id != launch.credential_id:
+        raise HTTPException(status_code=403, detail="launch key does not own this evaluation")
     if row.state in {EvaluationState.SUCCEEDED.value, EvaluationState.FAILED.value}:
         raise HTTPException(status_code=409, detail="completed evaluation cannot be canceled")
     row.state = EvaluationState.CANCELED.value

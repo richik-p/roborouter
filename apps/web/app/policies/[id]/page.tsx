@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, Play, ShieldAlert } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import LaunchKeyField from "@/components/launch-key-field";
 import { createEvaluation, getPolicy } from "@/lib/api";
 import type { Policy } from "@/lib/types";
 
@@ -36,9 +37,12 @@ export default function PolicyDetail() {
       <Link href="/#explore" className="eyebrow"><ArrowLeft size={14} /> Back to Explore</Link>
       <div className="detail-top">
         <div><h1>{policy.name}</h1><p className="detail-lead">{policy.description}</p></div>
-        <button className="button accent" disabled={!policy.runtime || policy.id !== "pi05-libero" || launching} onClick={launch}>
-          <Play size={16} /> {launching ? "Queueing…" : policy.id === "pi05-libero" ? "Run LIBERO eval" : "Runner unavailable"}
-        </button>
+        <div className="launch-controls">
+          {policy.runtime && <LaunchKeyField />}
+          <button className="button accent" disabled={!policy.runtime || policy.id !== "pi05-libero" || launching} onClick={launch}>
+            <Play size={16} /> {launching ? "Queueing…" : policy.id === "pi05-libero" ? "Run LIBERO eval" : "Runner unavailable"}
+          </button>
+        </div>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="detail-grid">

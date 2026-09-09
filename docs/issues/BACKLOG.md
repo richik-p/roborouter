@@ -22,7 +22,7 @@ This is the local issue source until a GitHub remote exists.
 - [ ] M4 UAV simulation proof
 - [ ] M5 read-only and shadow pilot
 - [ ] M6 supervised physical actuation
-- [ ] M7 external beta
+- [ ] M7 external beta — launch keys, quotas, and pilot intake CTA landed on `beta` (2026-09-09); accounts, telemetry, and onboarding pending
 
 Checked items represent completed local implementation, not production readiness.
 Issue publication remains deferred until a GitHub remote exists.

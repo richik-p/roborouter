@@ -2,15 +2,23 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
+from roborouter_api import main as api_main
 from roborouter_api.database import SessionLocal
-from roborouter_api.db_models import PolicyRow, WorkerCredentialRow
+from roborouter_api.db_models import EvaluationJobRow, PolicyRow, WorkerCredentialRow
+from roborouter_api.launch_credentials import create_launch_credential, revoke_launch_credential
 from roborouter_api.main import app
 from roborouter_api.worker_credentials import (
     create_worker_credential,
     revoke_worker_credential,
     rotate_worker_credential,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
+
+LAUNCH_HEADERS = {"Authorization": "Bearer rrl_test-launch.test-launch-secret"}
+
+
+def _launch_headers(token: str) -> dict:
+    return {"Authorization": f"Bearer {token}"}
 
 
 def _evaluation_payload(seed: int) -> dict:
@@ -69,8 +77,7 @@ def test_catalog_compatibility_rollout_and_job_flow() -> None:
         assert rollout.status_code == 200
         assert "not a RoboRouter-executed episode" in rollout.json()["evidence_note"]
 
-        created = client.post(
-            "/v0/evaluations",
+        created = client.post("/v0/evaluations", headers=LAUNCH_HEADERS,
             json={
                 "policy_id": "pi05-libero",
                 "policy_revision": "lerobot-pi05-libero-finetuned",
@@ -248,7 +255,7 @@ def test_worker_credentials_are_scoped_and_bound_to_claimed_jobs() -> None:
         )
         asyncio.run(_expire_credential("expired-credential"))
 
-        created = client.post("/v0/evaluations", json=_evaluation_payload(19))
+        created = client.post("/v0/evaluations", headers=LAUNCH_HEADERS, json=_evaluation_payload(19))
         assert created.status_code == 201
         claimed = client.post(
             "/private/workers/claim",
@@ -303,7 +310,7 @@ def test_revoking_a_credential_terminates_its_active_lease() -> None:
                 token=token,
             )
         )
-        created = client.post("/v0/evaluations", json=_evaluation_payload(23))
+        created = client.post("/v0/evaluations", headers=LAUNCH_HEADERS, json=_evaluation_payload(23))
         assert created.status_code == 201
         claimed = client.post(
             "/private/workers/claim",
@@ -336,7 +343,7 @@ def test_rotation_allows_a_bounded_overlap_without_transferring_the_lease() -> N
                 token=old_token,
             )
         )
-        created = client.post("/v0/evaluations", json=_evaluation_payload(29))
+        created = client.post("/v0/evaluations", headers=LAUNCH_HEADERS, json=_evaluation_payload(29))
         claimed = client.post(
             "/private/workers/claim",
             headers={"Authorization": f"Bearer {old_token}"},
@@ -372,8 +379,7 @@ def test_rotation_allows_a_bounded_overlap_without_transferring_the_lease() -> N
 
 def test_queued_evaluation_can_be_canceled() -> None:
     with TestClient(app) as client:
-        created = client.post(
-            "/v0/evaluations",
+        created = client.post("/v0/evaluations", headers=LAUNCH_HEADERS,
             json={
                 "policy_id": "pi05-libero",
                 "policy_revision": "lerobot-pi05-libero-finetuned",
@@ -386,7 +392,7 @@ def test_queued_evaluation_can_be_canceled() -> None:
         )
         assert created.status_code == 201
 
-        canceled = client.post(f"/v0/evaluations/{created.json()['id']}/cancel")
+        canceled = client.post(f"/v0/evaluations/{created.json()['id']}/cancel", headers=LAUNCH_HEADERS)
         assert canceled.status_code == 200
         assert canceled.json()["state"] == "CANCELED"
 
@@ -448,3 +454,93 @@ def test_catalog_reads_resolve_to_the_newest_policy_revision() -> None:
             assert [record["policy_revision"] for record in records] == ["research-test-newer"]
         finally:
             asyncio.run(_delete_policy_row(pk))
+
+
+async def _count_active_jobs() -> int:
+    async with SessionLocal() as session:
+        statement = (
+            select(func.count())
+            .select_from(EvaluationJobRow)
+            .where(EvaluationJobRow.state.in_(["QUEUED", "CLAIMED", "RUNNING"]))
+        )
+        return int(await session.scalar(statement) or 0)
+
+
+def test_evaluation_launch_requires_a_valid_launch_key() -> None:
+    with TestClient(app) as client:
+        assert client.post("/v0/evaluations", json=_evaluation_payload(31)).status_code == 401
+        wrong = client.post(
+            "/v0/evaluations", headers=_launch_headers("rrl_test-launch.wrong"), json=_evaluation_payload(31)
+        )
+        assert wrong.status_code == 401
+        worker_token = {"Authorization": "Bearer rrw_test-credential.test-worker-secret"}
+        assert client.post("/v0/evaluations", headers=worker_token, json=_evaluation_payload(31)).status_code == 401
+        too_many = client.post(
+            "/v0/evaluations",
+            headers=LAUNCH_HEADERS,
+            json={**_evaluation_payload(31), "seeds": list(range(11))},
+        )
+        assert too_many.status_code == 422
+        assert "seeds" in too_many.json()["detail"]
+        assert client.get("/v0/policies").status_code == 200  # reads stay public
+
+
+def test_launch_keys_enforce_quotas_and_ownership() -> None:
+    with TestClient(app) as client:
+        _, alice = asyncio.run(create_launch_credential(role="user", label="alice", concurrent_limit=1, daily_limit=2))
+        _, bob = asyncio.run(create_launch_credential(role="user", label="bob", concurrent_limit=5, daily_limit=5))
+
+        first = client.post("/v0/evaluations", headers=_launch_headers(alice), json=_evaluation_payload(41))
+        assert first.status_code == 201
+        blocked = client.post("/v0/evaluations", headers=_launch_headers(alice), json=_evaluation_payload(42))
+        assert blocked.status_code == 429
+        assert "active evaluation" in blocked.json()["detail"]
+
+        job_id = first.json()["id"]
+        assert client.post(f"/v0/evaluations/{job_id}/cancel", headers=_launch_headers(bob)).status_code == 403
+        own = client.post(f"/v0/evaluations/{job_id}/cancel", headers=_launch_headers(alice))
+        assert own.status_code == 200
+        assert own.json()["state"] == "CANCELED"
+
+        second = client.post("/v0/evaluations", headers=_launch_headers(alice), json=_evaluation_payload(42))
+        assert second.status_code == 201
+        client.post(f"/v0/evaluations/{second.json()['id']}/cancel", headers=_launch_headers(alice))
+        daily = client.post("/v0/evaluations", headers=_launch_headers(alice), json=_evaluation_payload(43))
+        assert daily.status_code == 429
+        assert "24-hour" in daily.json()["detail"]
+
+        bob_job = client.post("/v0/evaluations", headers=_launch_headers(bob), json=_evaluation_payload(44))
+        assert bob_job.status_code == 201
+        by_operator = client.post(f"/v0/evaluations/{bob_job.json()['id']}/cancel", headers=LAUNCH_HEADERS)
+        assert by_operator.status_code == 200
+
+
+def test_revoking_a_launch_key_cancels_its_jobs_and_rejects_the_key() -> None:
+    with TestClient(app) as client:
+        row, token = asyncio.run(
+            create_launch_credential(role="user", label="revoked", concurrent_limit=3, daily_limit=5)
+        )
+        created = client.post("/v0/evaluations", headers=_launch_headers(token), json=_evaluation_payload(51))
+        assert created.status_code == 201
+        asyncio.run(revoke_launch_credential(row.credential_id))
+        job = client.get(f"/v0/evaluations/{created.json()['id']}").json()
+        assert job["state"] == "CANCELED"
+        assert job["failure_detail"] == "launch key revoked"
+        rejected = client.post("/v0/evaluations", headers=_launch_headers(token), json=_evaluation_payload(52))
+        assert rejected.status_code == 401
+
+
+def test_global_active_cap_applies_to_everyone_and_open_mode_skips_the_key(monkeypatch) -> None:
+    with TestClient(app) as client:
+        monkeypatch.setattr(api_main.settings, "max_active_evaluations", asyncio.run(_count_active_jobs()) + 1)
+        allowed = client.post("/v0/evaluations", headers=LAUNCH_HEADERS, json=_evaluation_payload(61))
+        assert allowed.status_code == 201
+        full = client.post("/v0/evaluations", headers=LAUNCH_HEADERS, json=_evaluation_payload(62))
+        assert full.status_code == 429
+        assert "capacity" in full.json()["detail"]
+        client.post(f"/v0/evaluations/{allowed.json()['id']}/cancel", headers=LAUNCH_HEADERS)
+
+        monkeypatch.setattr(api_main.settings, "evaluation_access", "open")
+        anonymous = client.post("/v0/evaluations", json=_evaluation_payload(63))
+        assert anonymous.status_code == 201
+        assert client.post(f"/v0/evaluations/{anonymous.json()['id']}/cancel").status_code == 200

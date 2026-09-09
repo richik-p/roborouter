@@ -54,8 +54,18 @@ test("refuses a matched label when one result identity differs", async ({ page }
   await expect(page.getByText("Matched result set")).toHaveCount(0);
 });
 
+const LAUNCH_KEY = "rrl_e2e-launch.e2e-only-secret";
+
+test("refuses to launch an evaluation without an access key", async ({ page }) => {
+  await page.goto("/policies/pi05-libero");
+  await page.getByRole("button", { name: "Run LIBERO eval" }).click();
+  await expect(page.getByText("launch key required")).toBeVisible();
+  await expect(page).toHaveURL(/\/policies\/pi05-libero/);
+});
+
 test("launches and cancels a queued evaluation", async ({ page }) => {
   await page.goto("/policies/pi05-libero");
+  await page.getByLabel("Access key").fill(LAUNCH_KEY);
   await page.getByRole("button", { name: "Run LIBERO eval" }).click();
   await expect(page).toHaveURL(/\/evaluations\/eval-/);
   await expect(page.getByRole("heading", { name: "queued" })).toBeVisible();
@@ -77,6 +87,7 @@ test("persists a worker completion and links its immutable artifact", async ({ p
   };
 
   await page.goto("/policies/pi05-libero");
+  await page.getByLabel("Access key").fill(LAUNCH_KEY);
   await page.getByRole("button", { name: "Run LIBERO eval" }).click();
   await expect(page).toHaveURL(/\/evaluations\/eval-/);
   const jobId = page.url().split("/").at(-1)!;

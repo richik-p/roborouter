@@ -8,7 +8,17 @@ from sqlalchemy import select
 
 from .catalog import load_catalog
 from .database import SessionLocal, engine
-from .db_models import Base, EnvironmentRow, PolicyRow, RobotRow, RolloutRow, TaskRow, WorkerCredentialRow
+from .db_models import (
+    Base,
+    EnvironmentRow,
+    LaunchCredentialRow,
+    PolicyRow,
+    RobotRow,
+    RolloutRow,
+    TaskRow,
+    WorkerCredentialRow,
+)
+from .launch_auth import hash_launch_token, parse_launch_token
 from .settings import get_settings
 from .worker_auth import WORKER_SCOPES, hash_worker_token, parse_worker_token
 
@@ -47,6 +57,30 @@ async def seed_database() -> None:
                 )
             elif credential.worker_id != settings.worker_bootstrap_id or credential.token_hash != expected_hash:
                 raise RuntimeError("bootstrap worker credential conflicts with the stored identity")
+
+        if settings.launch_bootstrap_token:
+            launch_id = parse_launch_token(settings.launch_bootstrap_token)
+            if launch_id is None:
+                raise RuntimeError("LAUNCH_BOOTSTRAP_TOKEN must use the rrl_<credential-id>.<secret> format")
+            launch = await session.get(LaunchCredentialRow, launch_id)
+            launch_hash = hash_launch_token(settings.launch_bootstrap_token)
+            if launch is None:
+                session.add(
+                    LaunchCredentialRow(
+                        credential_id=launch_id,
+                        role=settings.launch_bootstrap_role,
+                        token_hash=launch_hash,
+                        label="bootstrap",
+                        concurrent_limit=settings.launch_default_concurrent_limit,
+                        daily_limit=settings.launch_default_daily_limit,
+                        created_at=datetime.now(UTC),
+                        expires_at=None,
+                        revoked_at=None,
+                        last_used_at=None,
+                    )
+                )
+            elif launch.token_hash != launch_hash:
+                raise RuntimeError("bootstrap launch credential conflicts with the stored identity")
 
         for policy in policies:
             existing = await session.scalar(

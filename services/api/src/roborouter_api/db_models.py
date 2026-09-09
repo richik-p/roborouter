@@ -76,6 +76,7 @@ class EvaluationJobRow(Base):
     request: Mapped[dict[str, Any]] = mapped_column(JSON)
     worker_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
     credential_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    launch_credential_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failure_kind: Mapped[str | None] = mapped_column(String(80), nullable=True)
     failure_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -140,6 +141,21 @@ class WorkerCredentialRow(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     scopes: Mapped[list[str]] = mapped_column(JSON)
     label: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LaunchCredentialRow(Base):
+    __tablename__ = "launch_credentials"
+
+    credential_id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    role: Mapped[str] = mapped_column(String(40), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    label: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    concurrent_limit: Mapped[int] = mapped_column(default=1)
+    daily_limit: Mapped[int] = mapped_column(default=5)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

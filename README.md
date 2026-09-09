@@ -29,6 +29,8 @@ action tensor.
 - PostgreSQL-backed evaluation jobs with leases, heartbeats, cancellation, and
   idempotent completion.
 - Outbound-only evaluation workers with scoped, revocable per-worker credentials.
+- Launch keys for evaluation access, closed by default, with per-key concurrency
+  and daily quotas plus a global active-job cap.
 - S3-compatible storage for hashed videos, traces, logs, and configuration
   snapshots.
 - A web interface for policy discovery, compatibility analysis, evaluation status,

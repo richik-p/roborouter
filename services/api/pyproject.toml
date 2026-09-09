@@ -18,6 +18,7 @@ dependencies = [
 [project.scripts]
 roborouter-seed = "roborouter_api.seed:run"
 roborouter-worker-credentials = "roborouter_api.worker_credentials:run"
+roborouter-launch-credentials = "roborouter_api.launch_credentials:run"
 
 [build-system]
 requires = ["hatchling"]

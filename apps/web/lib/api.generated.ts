@@ -1186,7 +1186,9 @@ export interface operations {
     create_evaluation_v0_evaluations_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1250,7 +1252,9 @@ export interface operations {
     cancel_evaluation_v0_evaluations__job_id__cancel_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path: {
                 job_id: string;
             };

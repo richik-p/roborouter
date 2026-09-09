@@ -1,3 +1,4 @@
+import { launchHeaders } from "./launch-key";
 import type { Compatibility, EvaluationJob, Policy, Robot, Rollout, Task } from "./types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -38,7 +39,7 @@ export async function listRollouts(filters?: {
 export const getRollout = (id: string) => request<Rollout>(`/v0/rollouts/${id}`);
 export const getEvaluation = (id: string) => request<EvaluationJob>(`/v0/evaluations/${id}`);
 export const cancelEvaluation = (id: string) =>
-  request<EvaluationJob>(`/v0/evaluations/${id}/cancel`, { method: "POST" });
+  request<EvaluationJob>(`/v0/evaluations/${id}/cancel`, { method: "POST", headers: launchHeaders() });
 export const listEvaluationRollouts = async (id: string) =>
   (await request<{ items: Rollout[] }>(`/v0/evaluations/${id}/rollouts`)).items;
 
@@ -73,6 +74,7 @@ export function createEvaluation(
 ) {
   return request<EvaluationJob>("/v0/evaluations", {
     method: "POST",
+    headers: launchHeaders(),
     body: JSON.stringify({
       policy_id: policy.id,
       policy_revision: policy.revision,

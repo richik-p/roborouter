@@ -76,137 +76,630 @@ policies:
         exact_runtime_match: true
     tags: [language-conditioned, manipulation, libero, executable]
 
-  - &research_manip
-    id: openvla
-    revision: research-2026-08-20
+  # ---------------------------------------------------------------------------
+  # Research entries. None has a RoboRouter runner; compatibility stays
+  # RESEARCH_ONLY. Evidence text records exactly what the pinned vla-eval v0.4.0
+  # reproductions found, including negative results. Revision bumps replace the
+  # 2026-08-20 anchor-based entries; old rows stay in the database for provenance.
+  # ---------------------------------------------------------------------------
+
+  - id: openvla
+    revision: research-2026-09-09
     name: OpenVLA
     family: OpenVLA
-    description: Open vision-language-action baseline; exact robot checkpoint required.
+    description: >-
+      7B open VLA (Prismatic VLM on Llama-2 with DINOv2/SigLIP) trained on Open
+      X-Embodiment; one third-person image, no proprioception, single-step 7-D
+      end-effector actions. LIBERO needs a per-suite fine-tuned checkpoint.
     robot_classes: [manipulator.single_arm]
-    task_families: [pick_and_place]
-    source: {repository: https://github.com/openvla/openvla, checkpoint: null, checkpoint_revision: null}
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/openvla/openvla
+      checkpoint: openvla/openvla-7b-finetuned-libero-object
+      checkpoint_revision: 287d6cfdf12d07b1449505f66d9bf3550257e9b3
     runtime: null
-    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [scene], state_schema: null, language_prompt: true}
+    observations: {sensor_types: [vision.rgb], cameras: [scene], state_schema: null, language_prompt: true}
     actions: null
     availability: {weights: open, code: open, license: mit}
     evidence:
-      - {level: RESEARCH_ONLY, source: https://github.com/openvla/openvla, checked_at: 2026-08-20, description: Family-level upstream evidence only., exact_robot_match: false, exact_runtime_match: false}
-    tags: [language-conditioned, manipulation, research]
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/openvla.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 reproduced 76.2% LIBERO four-suite average (reported
+          76.5%) with per-suite LoRA checkpoints; Object 86.6%, Goal 79.0%.
+          Matching required JPEG round-trip, Lanczos resize, and 0.9 center crop.
+          Checkpoint card declares MIT; the upstream README notes Llama-2
+          community-license terms for the base model. No RoboRouter runner yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, research]
 
-  - <<: *research_manip
-    id: openvla-oft
+  - id: openvla-oft
+    revision: research-2026-09-09
     name: OpenVLA-OFT
     family: OpenVLA-OFT
-    source: {repository: https://github.com/moojink/openvla-oft, checkpoint: null, checkpoint_revision: null}
+    description: >-
+      OpenVLA with optimized fine-tuning: parallel decoding, 8-step continuous
+      action chunks trained with L1 regression, third-person plus wrist images,
+      and 8-D proprioception. One joint checkpoint covers all four LIBERO suites.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/moojink/openvla-oft
+      checkpoint: moojink/openvla-7b-oft-finetuned-libero-spatial-object-goal-10
+      checkpoint_revision: 638918f3d1c2e43a39a8a20772bdb8b91835e4b7
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.ee_gripper], cameras: [scene, wrist], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
     evidence:
-      - {level: RESEARCH_ONLY, source: https://github.com/moojink/openvla-oft, checked_at: 2026-08-20, description: Family-level upstream evidence only., exact_robot_match: false, exact_runtime_match: false}
-  - <<: *research_manip
-    id: groot-n17
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/oft.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 reproduced 96.7% LIBERO four-suite average (reported
+          96.8% for the joint checkpoint; Object 97.6%, Goal 97.4%, 2000
+          episodes). Reproduction depended on robosuite-style quaternion to
+          axis-angle conversion without antipodal normalization. No RoboRouter
+          runner yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, research]
+
+  - id: groot-n17
+    revision: research-2026-09-09
     name: GR00T N1.7
-    family: GR00T N1.7
-    source: {repository: https://github.com/NVIDIA/Isaac-GR00T, checkpoint: null, checkpoint_revision: null}
-    availability: {weights: gated, code: open, license: apache-2.0}
+    family: GR00T
+    description: >-
+      NVIDIA 3B generalist VLA with a diffusion-transformer action head and
+      per-embodiment modality configs; this entry pins LeRobot's converted
+      LIBERO Object checkpoint. Loading needs gated access to the
+      Cosmos-Reason2-2B backbone on Hugging Face.
+    robot_classes: [manipulator.single_arm, manipulator.bimanual, humanoid]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/NVIDIA/Isaac-GR00T
+      checkpoint: nvidia/gr00t17-lerobot-libero_object-640
+      checkpoint_revision: 1499db357f6ca3762b56c2e8c00b530eb9a09444
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.ee_gripper], cameras: [], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: gated, code: open, license: nvidia-open-model-license}
     evidence:
-      - {level: RESEARCH_ONLY, source: https://github.com/NVIDIA/Isaac-GR00T, checked_at: 2026-08-20, description: Early-access family; post-training is embodiment-specific., exact_robot_match: false, exact_runtime_match: false}
-  - <<: *research_manip
-    id: x-vla
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/lerobot.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 LeRobot bridge scored 99.0% on LIBERO Object (10 tasks
+          by 10 episodes, seed 7) with the converted checkpoint, above the 81%
+          LeRobot reports. The native Isaac-GR00T path with a community N1.6
+          checkpoint scored 94.9% four-suite (reported 97.0%). Code is
+          Apache-2.0; weights fall under the NVIDIA Open Model License. No
+          RoboRouter runner yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, research]
+
+  - id: x-vla
+    revision: research-2026-09-09
     name: X-VLA
     family: X-VLA
-    source: {repository: https://github.com/2toinf/X-VLA, checkpoint: null, checkpoint_revision: null}
+    description: >-
+      0.9B cross-embodiment VLA (Florence-2-large backbone) with per-embodiment
+      soft prompts; a flow-matching head emits absolute end-effector pose plus
+      gripper. Official checkpoints for LIBERO, CALVIN, WidowX, and Google Robot.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/2toinf/X-VLA
+      checkpoint: 2toINF/X-VLA-Libero
+      checkpoint_revision: 129e71460678b7236cee6fc9707f09d9fa0c3590
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.ee_gripper], cameras: [scene, wrist], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: apache-2.0}
     evidence:
-      - {level: RESEARCH_ONLY, source: https://github.com/2toinf/X-VLA, checked_at: 2026-08-20, description: Cross-embodiment family evidence., exact_robot_match: false, exact_runtime_match: false}
-  - <<: *research_manip
-    id: smolvla
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/xvla.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 reproduced 97.4% LIBERO four-suite average (reported
+          98.1%; Object 98.6%, Goal 98.0%), CALVIN ABC to D 4.30 (4.43), and
+          SimplerEnv WidowX 94.8% (95.8%). The LIBERO path must feed controller
+          states rather than observation states (about 42% otherwise). A LeRobot
+          bridge config also exists at the pin. No RoboRouter runner yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, cross-embodiment, research]
+
+  - id: smolvla
+    revision: research-2026-09-09
     name: SmolVLA
     family: SmolVLA
-    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: act
+    description: >-
+      Hugging Face's 450M compact VLA for affordable single-arm robots (SO-100
+      and SO-101 class); multi-view images, sensorimotor state, and language
+      condition a flow-matching action expert. Shipped as a base model that
+      expects fine-tuning on roughly 50 task episodes.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
+    source:
+      repository: https://github.com/huggingface/lerobot
+      checkpoint: lerobot/smolvla_base
+      checkpoint_revision: c83c3163b8ca9b7e67c509fffd9121e66cb96205
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: not-declared-on-model-card}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://huggingface.co/docs/lerobot/smolvla
+        checked_at: 2026-09-09
+        description: >-
+          Base checkpoint only. LeRobot documents fine-tuning as required and
+          publishes no LIBERO score; vla-eval v0.4.0 carries a LeRobot bridge
+          config for it but no reproduction. LeRobot code is Apache-2.0; the
+          model card declares no license.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, low-cost-hardware, research]
+
+  - id: act
+    revision: research-2026-09-09
     name: ACT
     family: ACT
-    description: Action Chunking Transformer family; requires task-specific training.
+    description: >-
+      Action Chunking with Transformers: a CVAE policy trained per task from
+      teleoperated demonstrations that predicts long joint-position chunks (100
+      steps in the reference). No pretrained weights and no language input.
+    robot_classes: [manipulator.bimanual, manipulator.single_arm]
+    task_families: [pick_and_place]
     source: {repository: https://github.com/tonyzhaozh/act, checkpoint: null, checkpoint_revision: null}
+    runtime: null
     observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: false}
-  - <<: *research_manip
-    id: diffusion-policy
+    actions: null
+    availability: {weights: unavailable, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/tonyzhaozh/act
+        checked_at: 2026-09-09
+        description: >-
+          Reference implementation targets ALOHA (bimanual) with simulated
+          Transfer Cube and Bimanual Insertion tasks; every deployment trains
+          from its own demonstrations. LeRobot maintains a separate ACT
+          implementation widely used on single arms.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [manipulation, imitation-learning, research]
+
+  - id: diffusion-policy
+    revision: research-2026-09-09
     name: Diffusion Policy
     family: Diffusion Policy
+    description: >-
+      Visuomotor policy that denoises action sequences with a diffusion model
+      (RSS 2023); state- and image-based variants are trained per task.
+      Reference checkpoints cover Push-T, Block Push, Kitchen, and a real UR5
+      Push-T, none of them a general robot checkpoint.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
     source: {repository: https://github.com/real-stanford/diffusion_policy, checkpoint: null, checkpoint_revision: null}
+    runtime: null
     observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: false}
-  - <<: *research_manip
-    id: octo
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/real-stanford/diffusion_policy
+        checked_at: 2026-09-09
+        description: >-
+          Task-specific checkpoints only; no language conditioning and no
+          LIBERO or Open X-Embodiment checkpoint exists to reproduce. The real
+          setup uses RealSense D415 cameras on a UR5.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [manipulation, imitation-learning, research]
+
+  - id: octo
+    revision: research-2026-09-09
     name: Octo
     family: Octo
-    source: {repository: https://github.com/octo-models/octo, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: cogact
+    description: >-
+      93M (base) and 27M (small) transformer policies pretrained on 800k Open
+      X-Embodiment trajectories; primary plus wrist RGB, language or goal-image
+      conditioning, 4-step action chunks. Built to be fine-tuned to new
+      sensors, action spaces, and morphologies.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
+    source:
+      repository: https://github.com/octo-models/octo
+      checkpoint: rail-berkeley/octo-base-1.5
+      checkpoint_revision: ee3c10e8edd6ce2e8b1e8744d3c6fba4097bed48
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [scene, wrist], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/octo-models/octo
+        checked_at: 2026-09-09
+        description: >-
+          Open pretrained weights, but no vla-eval reproduction at v0.4.0 and no
+          LIBERO checkpoint; expect fine-tuning for any specific robot.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, research]
+
+  - id: cogact
+    revision: research-2026-09-09
     name: CogACT
     family: CogACT
-    source: {repository: https://github.com/microsoft/CogACT, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: db-cogact
+    description: >-
+      Microsoft VLA pairing a Prismatic-style VLM with a diffusion-transformer
+      action head; 16-step 7-DoF end-effector chunks from one RGB view and
+      language. Small, Base, and Large checkpoints evaluated on SimplerEnv and a
+      Google robot.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
+    source:
+      repository: https://github.com/microsoft/CogACT
+      checkpoint: CogACT/CogACT-Base
+      checkpoint_revision: 6550bf0992f162fc5d74f14ffee30771a9433363
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [scene], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/README.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 lists reported SimplerEnv scores for CogACT-Base
+          (WidowX 51.3%, Google Robot VM 74.8%, VA 61.3%) but has not reproduced
+          them; no LIBERO checkpoint. The Base checkpoint targets Google-robot
+          (fractal) action semantics.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, research]
+
+  - id: db-cogact
+    revision: research-2026-09-09
     name: DB-CogACT
-    family: DB-CogACT
-    source: {repository: https://github.com/dexmal/dexbotic, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: rdt
-    name: RDT
+    family: Dexbotic
+    description: >-
+      CogACT-style diffusion-transformer action head on the DexboticVLM
+      (Qwen2.5 plus CLIP) from the Dexbotic VLA toolbox; separate checkpoints
+      per benchmark (LIBERO, CALVIN, SimplerEnv, ManiSkill2, RoboTwin) with
+      per-suite chunk sizes.
+    robot_classes: [manipulator.single_arm, manipulator.bimanual]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/dexmal/dexbotic
+      checkpoint: Dexmal/libero-db-cogact
+      checkpoint_revision: 2cb20bcaa1e2e39d431b7e3d40a2d7a696388a10
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: cc-variant-not-declared-on-model-card}
+    evidence:
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/dexbotic.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 reproduced 94.7% LIBERO four-suite average (reported
+          94.9%; Object 98.4%, Goal 96.0%, seed 7, 2000 episodes) and CALVIN ABC
+          to D 4.02 (4.06); SimplerEnv WidowX reached 63.5% against 69.5%
+          reported. Requires transformers 4.46.3. Code is MIT; the LIBERO
+          checkpoint card declares only "cc". No RoboRouter runner yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, research]
+
+  - id: rdt
+    revision: research-2026-09-09
+    name: RDT-1B
     family: RDT
-    source: {repository: https://github.com/thu-ml/RoboticsDiffusionTransformer, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: robomamba
+    description: >-
+      1B diffusion-transformer foundation policy for bimanual manipulation (a
+      170M variant also exists); exterior plus left and right wrist cameras,
+      joint-state proprioception, language, and 64-step chunks in
+      joint-position or delta end-effector mode. Fine-tuning per robot is
+      expected; the ALOHA reference used 6k-plus episodes.
+    robot_classes: [manipulator.bimanual, manipulator.single_arm]
+    task_families: [pick_and_place]
+    source:
+      repository: https://github.com/thu-ml/RoboticsDiffusionTransformer
+      checkpoint: robotics-diffusion-transformer/rdt-1b
+      checkpoint_revision: eb09036cc64ca4945051acbd1bd581d30a1d7711
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [scene, left_wrist, right_wrist], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/thu-ml/RoboticsDiffusionTransformer
+        checked_at: 2026-09-09
+        description: >-
+          Open pretrained weights with ManiSkill and RoboTwin results upstream,
+          but no vla-eval reproduction at v0.4.0 and no LIBERO checkpoint. The
+          six-image ordering (exterior, right wrist, left wrist across two
+          timesteps) is a hard interface requirement.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, bimanual, research]
+
+  - id: robomamba
+    revision: research-2026-09-09
     name: RoboMamba
     family: RoboMamba
+    description: >-
+      Multimodal state-space (Mamba) model with a lightweight pose-prediction
+      head for efficient robot reasoning and manipulation; vision and language
+      in, end-effector pose out.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
     source: {repository: https://github.com/lmzpai/roboMamba, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: tinyvla
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [scene], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/lmzpai/roboMamba
+        checked_at: 2026-09-09
+        description: >-
+          Checkpoints are published in the repository's test branch and training
+          code is provided on request; target robots, benchmarks, and the exact
+          pose representation are not stated on the README. No Hugging Face
+          checkpoint identity to pin.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, research]
+
+  - id: tinyvla
+    revision: research-2026-09-09
     name: TinyVLA
     family: TinyVLA
+    description: >-
+      Compact VLA family (about 400M, 700M, and 1.3B on Llava-Pythia backbones)
+      aimed at fast, data-efficient single-arm manipulation; multi-view
+      cameras, joint proprioception, and language. Evaluated on a real Franka.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place]
     source: {repository: https://github.com/liyaxuanliyaxuan/TinyVLA, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: vla-jepa
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/liyaxuanliyaxuan/TinyVLA
+        checked_at: 2026-09-09
+        description: >-
+          The README states weights for all three sizes are on Hugging Face but
+          names no official repo ids, so no checkpoint identity is pinned; no
+          public benchmark scores or vla-eval reproduction.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, research]
+
+  - id: vla-jepa
+    revision: research-2026-09-09
     name: VLA-JEPA
     family: VLA-JEPA
-    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: lingbot-va
+    description: >-
+      VLA combining a Qwen3-VL backbone with a V-JEPA2 self-supervised video
+      world model (used in training) and a flow-matching DiT action head;
+      LeRobot-native with LIBERO, SimplerEnv, and pretrain checkpoints.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/huggingface/lerobot/tree/main/src/lerobot/policies/vla_jepa
+      checkpoint: lerobot/VLA-JEPA-LIBERO
+      checkpoint_revision: 735d9f692981e286ade093b5046627eda876e5d0
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: apache-2.0}
+    evidence:
+      - level: UPSTREAM_REPRODUCTION
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/lerobot.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 LeRobot bridge scored 96.0% on LIBERO-10 (Long; 10
+          tasks by 10 episodes, seed 7) against 93.0 reported by LeRobot. Object
+          and Goal suites were not separately reproduced. No RoboRouter runner
+          yet.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, world-model, research]
+
+  - id: lingbot-va
+    revision: research-2026-09-09
     name: LingBot-VA
-    family: LingBot-VA
-    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: fastwam
+    family: LingBot
+    description: >-
+      About 5B autoregressive video-action world model on the Wan2.2
+      video-diffusion stack (UMT5-XXL text encoder) that interleaves
+      video-latent and action prediction; agentview plus wrist RGB and language
+      in, a 30-D end-effector pose plus gripper layout out. LeRobot-native with
+      LIBERO-Long and RoboTwin checkpoints.
+    robot_classes: [manipulator.single_arm, manipulator.bimanual]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/huggingface/lerobot/tree/main/src/lerobot/policies/lingbot_va
+      checkpoint: lerobot/lingbot_va_libero_long
+      checkpoint_revision: 73e0be23b134a7c4dfc2d82f6ff27ba0bfdc0932
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [scene, wrist], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: apache-2.0}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/lerobot.md
+        checked_at: 2026-09-09
+        description: >-
+          vla-eval v0.4.0 LeRobot bridge validated 10/10 on LIBERO-10 (one
+          episode per task), but LeRobot publishes no reference score, so
+          nothing was reproduced. Inference must use the bridge's select-action
+          path (0/10 with chunked inference) and takes about 21 s per 16-step
+          chunk on an A100, far from real time.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [language-conditioned, manipulation, libero, world-model, research]
+
+  - id: fastwam
+    revision: research-2026-09-09
     name: FastWAM
     family: FastWAM
-    source: {repository: https://github.com/huggingface/lerobot, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: aloha-act
-    name: ALOHA ACT
+    description: >-
+      World-action model on the Wan2.2-TI2V-5B video backbone (arXiv 2603.16666)
+      that questions whether test-time future imagination is needed; this
+      checkpoint is the unconditioned two-camera LIBERO variant with 10-step
+      action chunks. LeRobot-native implementation.
+    robot_classes: [manipulator.single_arm]
+    task_families: [pick_and_place, articulated_object_interaction]
+    source:
+      repository: https://github.com/huggingface/lerobot/tree/main/src/lerobot/policies/fastwam
+      checkpoint: ZibinDong/fastwam_libero_uncond_2cam224
+      checkpoint_revision: a784645f9ce367ba6953dd20a7a7f0310c85747c
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [scene, wrist], state_schema: null, language_prompt: false}
+    actions: null
+    availability: {weights: open, code: open, license: not-declared-on-model-card}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/allenai/vla-evaluation-harness/blob/v0.4.0/docs/reproductions/lerobot.md
+        checked_at: 2026-09-09
+        description: >-
+          Not reproducible at the pin. vla-eval v0.4.0 scored 0/10 on LIBERO-10
+          through the LeRobot bridge and lerobot-eval v0.6.0 scored 0/20 with
+          the documented command; the checkpoint bakes a local tokenizer path
+          and needs an override just to load. The published 94.0 on LIBERO-10
+          is unverified.
+        exact_robot_match: true
+        exact_runtime_match: false
+    tags: [manipulation, libero, world-model, research, not-reproducible]
+
+  - id: aloha-act
+    revision: research-2026-09-09
+    name: ALOHA + ACT
     family: ACT
+    description: >-
+      The ALOHA bimanual teleoperation and data-collection stack (two leader
+      and two follower Interbotix arms, four cameras) paired with ACT for
+      imitation learning. The repository is hardware and recording code;
+      policies are trained per task and no weights ship.
     robot_classes: [manipulator.bimanual]
+    task_families: [pick_and_place]
     source: {repository: https://github.com/tonyzhaozh/aloha, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: dexgraspnet-policy
-    name: DexGraspNet policy family
+    runtime: null
+    observations: {sensor_types: [vision.rgb, proprioception.joint_position], cameras: [scene, low, left_wrist, right_wrist], state_schema: null, language_prompt: false}
+    actions: null
+    availability: {weights: unavailable, code: open, license: mit}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/tonyzhaozh/aloha
+        checked_at: 2026-09-09
+        description: >-
+          Hardware and teleoperation repository; policy evidence lives in the
+          ACT entry. Camera roles are CAM_HIGH, CAM_LOW, CAM_LEFT_WRIST, and
+          CAM_RIGHT_WRIST.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [manipulation, bimanual, imitation-learning, research]
+
+  - id: dexgraspnet-policy
+    revision: research-2026-09-09
+    name: DexGraspNet
     family: DexGraspNet
+    role: grasp_synthesis
+    description: >-
+      Large-scale dexterous grasp-synthesis pipeline and dataset (1.32M grasps
+      over 5,355 objects) for ShadowHand, with Allegro and MANO branches;
+      simulation-only, producing static grasp poses and joint configurations
+      from object meshes. Not a closed-loop policy.
     robot_classes: [dexterous_hand]
     task_families: [dexterous_grasping]
     source: {repository: https://github.com/PKU-EPIC/DexGraspNet, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: navila
+    runtime: null
+    observations: {sensor_types: [], cameras: [], state_schema: null, language_prompt: false}
+    actions: null
+    availability: {weights: unavailable, code: open, license: cc-by-nc-4.0}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/PKU-EPIC/DexGraspNet
+        checked_at: 2026-09-09
+        description: >-
+          Dataset and grasp-generation code only; no pretrained policy weights.
+          The README license is CC BY-NC 4.0 (non-commercial). Listed so
+          dexterous-hand discovery has a reference point, not as a runnable
+          policy.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [dexterous, grasping, dataset, research]
+
+  - id: navila
+    revision: research-2026-09-09
     name: NaVILA
     family: NaVILA
-    robot_classes: [mobile.wheeled]
+    description: >-
+      Two-level vision-language navigation model for legged robots (RSS 2025):
+      an 8B Llama-3 plus SigLIP VLA consumes 8-frame video and instructions and
+      emits mid-level language motion commands executed by a separate real-time
+      locomotion policy.
+    robot_classes: [legged.quadruped]
     task_families: [language_goal_navigation]
-    source: {repository: https://github.com/AnjieCheng/NaVILA, checkpoint: null, checkpoint_revision: null}
-  - <<: *research_manip
-    id: aerovla
+    source:
+      repository: https://github.com/AnjieCheng/NaVILA
+      checkpoint: a8cheng/navila-llama3-8b-8f
+      checkpoint_revision: b2294e96581454468d6b94f38201f4f965ef48b7
+    runtime: null
+    observations: {sensor_types: [vision.rgb], cameras: [front], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: apache-2.0}
+    evidence:
+      - level: RESEARCH_ONLY
+        source: https://github.com/AnjieCheng/NaVILA
+        checked_at: 2026-09-09
+        description: >-
+          Evaluated on VLN-CE (R2R, RxR) in simulation upstream. The VLA emits
+          language-level commands, so no RoboRouter control surface maps to it
+          without a robot-side locomotion controller. Specific quadruped
+          hardware is not stated on the README.
+        exact_robot_match: false
+        exact_runtime_match: false
+    tags: [language-conditioned, navigation, legged, research]
+
+  - id: aerovla
+    revision: research-2026-09-09
     name: AeroVLA
     family: AeroVLA
-    description: Research policy for vision-language UAV navigation.
+    description: >-
+      End-to-end UAV navigation VLA (ECCV 2026; formerly AerialVLA) built as
+      LoRA adapters on OpenVLA-7B; dual-view RGB and fuzzy language
+      instructions map to continuous 3-DoF kinematic commands plus a landing
+      signal in the TravelUAV/AirSim benchmark.
     robot_classes: [aerial.multirotor]
     task_families: [language_goal_navigation]
-    source: {repository: https://github.com/XuPeng23/AeroVLA, checkpoint: null, checkpoint_revision: null}
+    source:
+      repository: https://github.com/XuPeng23/AeroVLA
+      checkpoint: XuPeng23/AerialVLA
+      checkpoint_revision: 196f2f3253b69df6e90ac10b6ae041c7b3a9569e
+    runtime: null
     observations: {sensor_types: [vision.rgb, navigation.local_position], cameras: [front], state_schema: null, language_prompt: true}
+    actions: null
+    availability: {weights: open, code: open, license: apache-2.0}
     evidence:
-      - {level: RESEARCH_ONLY, source: https://github.com/XuPeng23/AeroVLA, checked_at: 2026-08-20, description: TravelUAV simulation evidence; no RoboRouter runner yet., exact_robot_match: false, exact_runtime_match: false}
+      - level: RESEARCH_ONLY
+        source: https://github.com/XuPeng23/AeroVLA
+        checked_at: 2026-09-09
+        description: >-
+          TravelUAV (Unreal/AirSim) simulation evidence only; no real-flight
+          results are claimed and no PX4 bridge or RoboRouter runner exists.
+          Weights are LoRA adapters that require the OpenVLA-7B base. The
+          second (grounding) camera view has no declared mapping here.
+        exact_robot_match: false
+        exact_runtime_match: false
     tags: [language-conditioned, aerial, research]

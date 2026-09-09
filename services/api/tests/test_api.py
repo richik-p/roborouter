@@ -3,13 +3,14 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from roborouter_api.database import SessionLocal
-from roborouter_api.db_models import WorkerCredentialRow
+from roborouter_api.db_models import PolicyRow, WorkerCredentialRow
 from roborouter_api.main import app
 from roborouter_api.worker_credentials import (
     create_worker_credential,
     revoke_worker_credential,
     rotate_worker_credential,
 )
+from sqlalchemy import select
 
 
 def _evaluation_payload(seed: int) -> dict:
@@ -392,3 +393,58 @@ def test_queued_evaluation_can_be_canceled() -> None:
         fetched = client.get(f"/v0/evaluations/{created.json()['id']}")
         assert fetched.status_code == 200
         assert fetched.json()["state"] == "CANCELED"
+
+
+async def _insert_policy_revision(policy_id: str, revision: str, name: str) -> int:
+    async with SessionLocal() as session:
+        current = await session.scalar(
+            select(PolicyRow).where(PolicyRow.policy_id == policy_id).order_by(PolicyRow.pk.desc())
+        )
+        assert current is not None
+        row = PolicyRow(
+            policy_id=policy_id,
+            revision=revision,
+            name=name,
+            family=current.family,
+            robot_classes=current.robot_classes,
+            task_families=current.task_families,
+            runtime_adapter=current.runtime_adapter,
+            evidence_level=current.evidence_level,
+            spec={**current.spec, "revision": revision, "name": name},
+        )
+        session.add(row)
+        await session.commit()
+        return row.pk
+
+
+async def _delete_policy_row(pk: int) -> None:
+    async with SessionLocal() as session:
+        row = await session.get(PolicyRow, pk)
+        if row is not None:
+            await session.delete(row)
+            await session.commit()
+
+
+def test_catalog_reads_resolve_to_the_newest_policy_revision() -> None:
+    with TestClient(app) as client:
+        before = client.get("/v0/policies").json()
+        pk = asyncio.run(_insert_policy_revision("openvla", "research-test-newer", "OpenVLA (newer revision)"))
+        try:
+            listed = client.get("/v0/policies").json()
+            assert listed["total"] == before["total"]
+            assert [item["revision"] for item in listed["items"] if item["id"] == "openvla"] == ["research-test-newer"]
+            assert client.get("/v0/policies/openvla").json()["revision"] == "research-test-newer"
+
+            records = client.post(
+                "/v0/compatibility/queries",
+                json={
+                    "robot_profile_id": "sim-libero-panda",
+                    "robot_revision": "2026-08-20.1",
+                    "task_profile_id": "libero-object-pick-place",
+                    "task_revision": "2026-08-20.1",
+                    "policy_ids": ["openvla"],
+                },
+            ).json()
+            assert [record["policy_revision"] for record in records] == ["research-test-newer"]
+        finally:
+            asyncio.run(_delete_policy_row(pk))

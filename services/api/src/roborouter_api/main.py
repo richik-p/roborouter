@@ -29,7 +29,7 @@ from roborouter_contracts import (
     TaskProfile,
     WorkerCapabilities,
 )
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -219,6 +219,16 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "ruleset_revision": RULESET_REVISION}
 
 
+def _current_policy_rows():
+    """Select only the newest imported revision of each policy id.
+
+    Older revisions stay in the table so Rollouts keep exact provenance; reads resolve
+    the same way as get_policy (highest pk wins).
+    """
+    newest = select(func.max(PolicyRow.pk)).group_by(PolicyRow.policy_id)
+    return select(PolicyRow).where(PolicyRow.pk.in_(newest))
+
+
 @app.get("/v0/policies", response_model=PolicyListResponse)
 async def list_policies(
     session: Session,
@@ -227,7 +237,7 @@ async def list_policies(
     task_family: str | None = None,
     executable: bool | None = None,
 ) -> PolicyListResponse:
-    statement = select(PolicyRow)
+    statement = _current_policy_rows()
     if q:
         statement = statement.where(or_(PolicyRow.name.ilike(f"%{q}%"), PolicyRow.family.ilike(f"%{q}%")))
     if executable is True:
@@ -290,7 +300,7 @@ async def compatibility_query(query: CompatibilityQuery, session: Session) -> li
         raise HTTPException(status_code=404, detail="robot or task revision not found")
     robot = RobotProfile.model_validate(robot_row.spec)
     task = TaskProfile.model_validate(task_row.spec)
-    statement = select(PolicyRow)
+    statement = _current_policy_rows()
     if query.policy_ids:
         statement = statement.where(PolicyRow.policy_id.in_(query.policy_ids))
     policies = [ExecutablePolicySpec.model_validate(row.spec) for row in (await session.scalars(statement)).all()]

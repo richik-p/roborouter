@@ -1,0 +1,193 @@
+{
+ "G0 identity": {
+  "gpu": "NVIDIA A10G, 595.91.07, 23028 MiB",
+  "torch": "2.11.0+cu130",
+  "cuda": "13.0",
+  "lerobot": "0.6.1",
+  "transformers": "5.5.4",
+  "strands_robots": "0.5.2",
+  "mujoco": "3.14.0",
+  "python": "3.12.15",
+  "checkpoint": "allenai/MolmoAct2-SO100_101",
+  "checkpoint_revision": "152569fe57914d97be91055800035f54e250d009"
+ },
+ "G1 load pinned checkpoint": {
+  "snapshot_download_s": 137.0,
+  "snapshot_gb": 21.78,
+  "snapshot_dir_ends_with_revision": true,
+  "create_s": 391.4,
+  "provider": "lerobot_local",
+  "vram_after_create": {
+   "allocated_gb": 11.02,
+   "peak_gb": 11.02
+  },
+  "requires_images": true,
+  "load_time_s": 391.22771438099994,
+  "public": [
+   "actions_per_step",
+   "cache_model",
+   "camera_key_map",
+   "children",
+   "control_frequency",
+   "execution_horizon",
+   "generic_state_keys_used",
+   "get_actions",
+   "get_actions_sync",
+   "inference_kwargs",
+   "is_chunk_emitting",
+   "load_cache_hit",
+   "load_time_s",
+   "missing_state_keys_used",
+   "pad_short_actions",
+   "policy_type",
+   "positional_fallback_used",
+   "preflight",
+   "pretrained_name_or_path",
+   "processor_overrides",
+   "provider_name",
+   "reads_instruction",
+   "requested_device",
+   "required_bodies",
+   "requires_images",
+   "reset",
+   "revision",
+   "robot_state_keys",
+   "rtc_observed_delay_steps",
+   "set_control_frequency",
+   "set_robot_state_keys",
+   "set_rtc_observed_delay",
+   "strict_keys",
+   "supports_rtc",
+   "use_processor"
+  ]
+ },
+ "G2 structural shadow with a real VLA": {
+  "obs_keys": [
+   "1",
+   "1.vel",
+   "2",
+   "2.vel",
+   "3",
+   "3.vel",
+   "4",
+   "4.vel",
+   "5",
+   "5.vel",
+   "6",
+   "6.vel",
+   "default",
+   "front",
+   "wrist"
+  ],
+  "state_keys": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6"
+  ],
+  "preflight": "ok",
+  "latency_ms_per_call": [
+   3740.8,
+   300.2,
+   297.2,
+   294.4,
+   294.7,
+   294.8
+  ],
+  "chunk_len": [
+   30,
+   30,
+   30,
+   30,
+   30,
+   30
+  ],
+  "action_keys": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6"
+  ],
+  "first_action": {
+   "1": 0.0004,
+   "2": 0.7886,
+   "3": 0.6179,
+   "4": 0.086,
+   "5": 0.0075,
+   "6": 0.1157
+  },
+  "state_delta_max": 0.0,
+  "actuation_calls": 0,
+  "vram": {
+   "allocated_gb": 11.13,
+   "peak_gb": 11.94
+  },
+  "trace": "/home/ec2-user/spike/out/gpu/g2_shadow_predicted_actions.jsonl",
+  "integrity": {
+   "positional_fallback_used": false,
+   "generic_state_keys_used": false,
+   "missing_state_keys_used": false
+  }
+ },
+ "G3 sim rollout with the real VLA (video)": {
+  "status": "success",
+  "wall_s": 4.1,
+  "started": "2026-10-02T17:37:34.252847+00:00",
+  "text": "Policy complete on 'so101'\nLerobotLocalPolicy | pick up the red cube\n3.7s | 90 steps | sim_t=1.800s\nVideo: /home/ec2-user/spike/out/gpu/g3_molmoact2_so101.mp4\n54 frames, 30fps, 640x480 | 145 KB",
+  "max_joint_motion_deg": 30.35,
+  "scalars": {
+   "robot_name": "so101",
+   "policy": "LerobotLocalPolicy",
+   "instruction": "pick up the red cube",
+   "instruction_read": true,
+   "n_steps": 90,
+   "steps_used": 90,
+   "elapsed_s": 3.681,
+   "stopped_early": false,
+   "stopped_reason": "budget",
+   "stop_when_true_at_reset": false,
+   "stop_when_reset_warning": null,
+   "action_errors": 0,
+   "actions_applied": 90,
+   "video_path": "/home/ec2-user/spike/out/gpu/g3_molmoact2_so101.mp4",
+   "video_frames": 54,
+   "video_fps": 30,
+   "policy_load_time_s": 391.228,
+   "policy_load_cache_hit": false,
+   "positional_fallback_used": false,
+   "generic_state_keys_used": false,
+   "missing_state_keys_used": false,
+   "policy_resident_rss_mb": 6659.671875,
+   "sim_time_s": 1.8,
+   "rtc_async_enabled": true,
+   "rtc_chunks_acquired": 3,
+   "rtc_prefetch_hits": 2,
+   "rtc_prefetch_blocks": 0,
+   "rtc_avg_inference_ms": 301.614,
+   "rtc_max_inference_ms": 310.195,
+   "chunk_prefetch_enabled": true,
+   "chunk_prefetch_chunks_acquired": 3,
+   "chunk_prefetch_hits": 2,
+   "chunk_prefetch_blocks": 0,
+   "avg_inference_ms": 301.614,
+   "max_inference_ms": 310.195,
+   "policy_rtc_enabled": false,
+   "partial_action_failure_rate": 0.0,
+   "n_episodes_requested": 1,
+   "n_episodes_completed": 1,
+   "episodes_saved": 0
+  },
+  "video_bytes": 148971,
+  "vram": {
+   "allocated_gb": 11.14,
+   "peak_gb": 11.95
+  }
+ },
+ "G4 emit RoboRouter shadow Rollout": {
+  "written": "rollout_shadow_molmoact2.json"
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "id": "rollout-spike-strands-shadow-molmoact2",
+ "mode": "shadow",
+ "policy_spec_id": "molmoact2-so100-101",
+ "policy_revision": "allenai-molmoact2-so100-101-152569fe5791",
+ "robot_profile_id": "sim-so101-mujoco",
+ "robot_revision": "spike-2026-10-02",
+ "task_profile_id": "so101-cube-pick-spike",
+ "task_revision": "spike-2026-10-02",
+ "environment_id": "strands-mujoco-so101",
+ "environment_revision": "strands-robots-0.5.2-mujoco-3.14.0",
+ "seed": 7,
+ "started_at": "2026-10-02T17:37:38.371948+00:00",
+ "duration_ms": 5222,
+ "success": false,
+ "metrics": {
+  "policy_calls": 6,
+  "chunk_len": 30,
+  "median_latency_ms": 296.0,
+  "state_delta_max": 0.0,
+  "actuation_calls": 0,
+  "success_measured": false
+ },
+ "runtime_identity": {
+  "gpu": "NVIDIA A10G, 595.91.07, 23028 MiB",
+  "torch": "2.11.0+cu130",
+  "cuda": "13.0",
+  "lerobot": "0.6.1",
+  "transformers": "5.5.4",
+  "strands_robots": "0.5.2",
+  "mujoco": "3.14.0",
+  "python": "3.12.15",
+  "checkpoint": "allenai/MolmoAct2-SO100_101",
+  "checkpoint_revision": "152569fe57914d97be91055800035f54e250d009"
+ },
+ "artifacts": [
+  {
+   "id": "art-g2-predicted",
+   "kind": "predicted_action_trace",
+   "uri": "file:///home/ec2-user/spike/out/gpu/g2_shadow_predicted_actions.jsonl",
+   "media_type": "application/x-ndjson",
+   "sha256": "2f712c9cd25c63c6888dc17850ab92c1a47021a6f0b6e500cac2b6ccf5e640a7",
+   "size_bytes": 29061
+  }
+ ],
+ "safety": {
+  "predicted_actions_executed": false,
+  "actuation_path_present": false,
+  "observation_source": "simulated (stand-in for real sensors)",
+  "trust_remote_code": true
+ },
+ "evidence_note": "Spike: a real VLA checkpoint at a pinned revision ran in a structural shadow loop through the Strands Policy interface; nothing was actuated."
+}

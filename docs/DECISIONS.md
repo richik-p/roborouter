@@ -147,3 +147,25 @@ Do not start with marketplace payouts, smart routing, complex provider economics
 **Date:** 2026-08-19
 
 Do not base MVP economics or architecture on assumed robots-per-GPU figures. Benchmark per architecture/workload before investing in specialized multiplexing.
+
+---
+
+## D-016 — `rr-agent` reuses an existing policy runtime; RoboRouter owns the shadow loop
+
+**Status:** proposed
+**Date:** 2026-10-02
+
+Build `rr-agent` on the policy interface and embodiment maps of Strands Robots
+(pinned release) rather than writing policy adapters and hardware drivers. Keep the
+shadow loop, execution identity, checkpoint pinning, and safety authority in
+RoboRouter, and do not route shadow sessions through a runtime's actuating robot
+class.
+
+Reason: the spike in `docs/research/STRANDS_ROBOTS_SPIKE.md` ran a real VLA through
+that interface in a loop with no actuator code path and emitted contract-valid
+Rollouts. The runtime has no shadow mode, no execution identity in its results, and
+refuses revision pinning for some checkpoints, so those remain RoboRouter's job.
+This extends D-007 and D-008 to the robot side.
+
+Open before acceptance: validate on one real robot during the first pilot.
+

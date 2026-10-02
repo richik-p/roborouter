@@ -1,0 +1,47 @@
+{
+ "policy_spec_id": "strands-mock",
+ "policy_revision": "strands-robots-0.5.2",
+ "robot_profile_id": "sim-so100-mujoco",
+ "robot_revision": "spike-2026-10-02",
+ "task_profile_id": "so100-cube-reach-spike",
+ "task_revision": "spike-2026-10-02",
+ "environment_id": "strands-mujoco-so100",
+ "environment_revision": "strands-robots-0.5.2-mujoco-3.14.0",
+ "seed": 7,
+ "id": "rollout-spike-strands-sim",
+ "mode": "sim",
+ "started_at": "2026-10-02T17:24:44.162875+00:00",
+ "duration_ms": 5061,
+ "success": false,
+ "metrics": {
+  "steps_used": 150,
+  "actions_applied": 150,
+  "action_errors": 0,
+  "success_measured": false
+ },
+ "runtime_identity": {
+  "strands_robots": "0.5.2",
+  "strands_agents": "1.57.2",
+  "mujoco": "3.14.0",
+  "numpy": "2.5.3",
+  "python": "3.12.15",
+  "mujoco_gl": "egl",
+  "mujoco_menagerie_revision": "bf756430b615819654b640f321c71ba5c3ebeef8",
+  "platform": "Linux-6.18.51-120.163.amzn2023.x86_64-x86_64-with-glibc2.34",
+  "robot_asset": "so100 (strands registry)"
+ },
+ "artifacts": [
+  {
+   "id": "art-e1-video",
+   "kind": "video",
+   "uri": "file:///home/ec2-user/spike/out/report/e1_rollout.mp4",
+   "media_type": "video/mp4",
+   "sha256": "177bab3833c9b3ccd5988ee081a7ce77e510eaa2d385bf25c33f4ddb94b473fb",
+   "size_bytes": 498894
+  }
+ ],
+ "safety": {
+  "physical_system_connected": false
+ },
+ "evidence_note": "Spike: Strands MockPolicy on the so100 MuJoCo sim. No success criterion; proves the record shape only."
+}

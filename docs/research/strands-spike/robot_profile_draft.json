@@ -1,0 +1,54 @@
+{
+ "id": "sim-so100-mujoco",
+ "revision": "spike-2026-10-02",
+ "name": "SO-100 (Strands MuJoCo sim)",
+ "robot_class": "manipulator.single_arm",
+ "manufacturer": "TheRobotStudio",
+ "model": "SO-100",
+ "middleware": "strands_robots.mujoco",
+ "simulated": true,
+ "sensors": [
+  {
+   "id": "joint_state",
+   "type": "proprioception.joint_position",
+   "dimensions": 6
+  },
+  {
+   "id": "default",
+   "type": "vision.rgb",
+   "semantic_name": "default",
+   "resolution": [
+    640,
+    480
+   ]
+  },
+  {
+   "id": "front",
+   "type": "vision.rgb",
+   "semantic_name": "front",
+   "resolution": [
+    640,
+    480
+   ]
+  }
+ ],
+ "control_surfaces": [
+  {
+   "schema": "manipulation.joint_position.v1",
+   "dimensions": 6,
+   "frame": "joint",
+   "units": [
+    "rad",
+    "rad",
+    "rad",
+    "rad",
+    "rad",
+    "rad"
+   ]
+  }
+ ],
+ "safety_capabilities": {
+  "hardware_estop": false,
+  "local_limits": true
+ }
+}

@@ -1,0 +1,353 @@
+{
+ "E0 identity": {
+  "strands_robots": "0.5.2",
+  "strands_agents": "1.57.2",
+  "mujoco": "3.14.0",
+  "numpy": "2.5.3",
+  "python": "3.12.15",
+  "mujoco_gl": "egl",
+  "mujoco_menagerie_revision": "bf756430b615819654b640f321c71ba5c3ebeef8",
+  "platform": "Linux-6.18.51-120.163.amzn2023.x86_64-x86_64-with-glibc2.34",
+  "robot_asset": "so100 (strands registry)"
+ },
+ "E1 seeded rollout + video": {
+  "status": "success",
+  "wall_s": 5.98,
+  "attempts": [
+   {
+    "video_keys": [
+     "camera",
+     "path"
+    ],
+    "status": "success",
+    "text": "Policy complete on 'so100'\nMockPolicy | pick up the red cube\n5.1s | 150 steps | sim_t=3.000s\nNote: MockPolicy does not read the instruction. Its actions - a test motion on every joint - were commanded to the robot whatever the task says; nothing above means th"
+   }
+  ],
+  "result_keys": [
+   "action_errors",
+   "action_resolution_rate",
+   "actions_applied",
+   "avg_inference_ms",
+   "chunk_prefetch_blocks",
+   "chunk_prefetch_chunks_acquired",
+   "chunk_prefetch_enabled",
+   "chunk_prefetch_hits",
+   "dataset_episode_indices",
+   "elapsed_s",
+   "episodes_saved",
+   "generic_state_keys_used",
+   "instruction",
+   "instruction_read",
+   "max_inference_ms",
+   "missing_state_keys_used",
+   "n_episodes_completed",
+   "n_episodes_requested",
+   "n_steps",
+   "partial_action_failure_rate",
+   "policy",
+   "policy_load_cache_hit",
+   "policy_load_time_s",
+   "policy_resident_rss_mb",
+   "policy_rtc_enabled",
+   "positional_fallback_used",
+   "robot_name",
+   "rtc_async_enabled",
+   "rtc_avg_inference_ms",
+   "rtc_chunks_acquired",
+   "rtc_max_inference_ms",
+   "rtc_prefetch_blocks",
+   "rtc_prefetch_hits",
+   "sim_time_s",
+   "steps_used",
+   "stop_when_reset_warning",
+   "stop_when_true_at_reset",
+   "stopped_early",
+   "stopped_reason",
+   "video_fps",
+   "video_frames",
+   "video_path"
+  ],
+  "video_path": "/home/ec2-user/spike/out/report/e1_rollout.mp4",
+  "video_bytes": 498894,
+  "seed_echoed": false,
+  "identity_fields_in_result": [],
+  "_started": "2026-10-02T17:24:44.162875+00:00",
+  "_json": {
+   "robot_name": "so100",
+   "policy": "MockPolicy",
+   "instruction": "pick up the red cube",
+   "instruction_read": false,
+   "n_steps": 150,
+   "steps_used": 150,
+   "elapsed_s": 5.061,
+   "stopped_early": false,
+   "stopped_reason": "budget",
+   "stop_when_true_at_reset": false,
+   "stop_when_reset_warning": null,
+   "action_errors": 0,
+   "actions_applied": 150,
+   "video_path": "/home/ec2-user/spike/out/report/e1_rollout.mp4",
+   "video_frames": 90,
+   "video_fps": 30,
+   "policy_load_time_s": 0.0,
+   "policy_load_cache_hit": false,
+   "positional_fallback_used": false,
+   "generic_state_keys_used": false,
+   "missing_state_keys_used": false,
+   "policy_resident_rss_mb": 372.33203125,
+   "sim_time_s": 3.0,
+   "rtc_async_enabled": false,
+   "rtc_chunks_acquired": 19,
+   "rtc_prefetch_hits": 0,
+   "rtc_prefetch_blocks": 0,
+   "rtc_avg_inference_ms": 0.34,
+   "rtc_max_inference_ms": 0.489,
+   "chunk_prefetch_enabled": false,
+   "chunk_prefetch_chunks_acquired": 19,
+   "chunk_prefetch_hits": 0,
+   "chunk_prefetch_blocks": 0,
+   "avg_inference_ms": 0.34,
+   "max_inference_ms": 0.489,
+   "policy_rtc_enabled": false,
+   "partial_action_failure_rate": 0.0,
+   "n_episodes_requested": 1,
+   "n_episodes_completed": 1,
+   "episodes_saved": 0
+  }
+ },
+ "E2 physics determinism (same seed, fresh sims)": {
+  "max_abs_joint_diff": 0.0,
+  "bitwise_identical": true,
+  "final_joints": {
+   "Rotation": -0.42349,
+   "Pitch": 0.15295,
+   "Elbow": -0.17483,
+   "Wrist_Pitch": 0.45769,
+   "Wrist_Roll": -0.46706,
+   "Jaw": 0.45653
+  }
+ },
+ "E3 benchmark evaluation (go2_walk_forward, mock, seed=7, x2)": {
+  "benchmarks": {
+   "go2_walk_forward": "unitree_go2",
+   "g1_walk_forward": "unitree_g1",
+   "t1_walk_forward": "booster_t1",
+   "go2_strafe_left": "unitree_go2",
+   "go2_turn_left": "unitree_go2"
+  },
+  "episode_record_keys": [
+   "actions_applied",
+   "cumulative_reward",
+   "episode",
+   "failure",
+   "failure_at_reset",
+   "info",
+   "max_step_reward",
+   "seed",
+   "steps",
+   "success",
+   "success_at_reset"
+  ],
+  "runs": [
+   {
+    "status": "success",
+    "wall_s": 4.7,
+    "success_rate": 0.0,
+    "avg_reward": 500.245,
+    "episodes": [
+     {
+      "seed": 1390851128,
+      "steps": 1000,
+      "success": false
+     },
+     {
+      "seed": 647892279,
+      "steps": 1000,
+      "success": false
+     },
+     {
+      "seed": 1695753998,
+      "steps": 1000,
+      "success": false
+     }
+    ]
+   },
+   {
+    "status": "success",
+    "wall_s": 4.7,
+    "success_rate": 0.0,
+    "avg_reward": 500.245,
+    "episodes": [
+     {
+      "seed": 1390851128,
+      "steps": 1000,
+      "success": false
+     },
+     {
+      "seed": 647892279,
+      "steps": 1000,
+      "success": false
+     },
+     {
+      "seed": 1695753998,
+      "steps": 1000,
+      "success": false
+     }
+    ]
+   }
+  ],
+  "reproducible": true,
+  "aggregate_keys": [
+   "actions_applied",
+   "avg_max_step_reward",
+   "avg_reward",
+   "avg_steps",
+   "benchmark_class",
+   "episodes",
+   "episodes_completed",
+   "episodes_failed_at_reset",
+   "episodes_successful_at_reset",
+   "generic_state_keys_used",
+   "max_steps",
+   "missing_state_keys_used",
+   "n_episodes",
+   "n_failure",
+   "n_success",
+   "pass_hat_k",
+   "policy_load_cache_hit",
+   "policy_load_time_s",
+   "policy_resident_rss_mb",
+   "positional_fallback_used",
+   "recording_save_error",
+   "reset_failure_warning",
+   "reset_success_warning",
+   "seed",
+   "steps_advanced",
+   "stopped_early",
+   "success_measured",
+   "success_rate",
+   "uncommanded_error",
+   "video_paths"
+  ]
+ },
+ "E4a structural shadow: policy sees observations, nothing actuates": {
+  "steps": 50,
+  "chunk_len": 8,
+  "action_keys": [
+   "Elbow",
+   "Jaw",
+   "Pitch",
+   "Rotation",
+   "Wrist_Pitch",
+   "Wrist_Roll"
+  ],
+  "state_delta_max": 0.0,
+  "actuation_calls": 0,
+  "avg_policy_ms": 0.263,
+  "trace": "/home/ec2-user/spike/out/report/e4a_predicted_actions.jsonl",
+  "obs_camera_keys": [
+   "default",
+   "front"
+  ],
+  "camera_shape": [
+   480,
+   640,
+   3
+  ]
+ },
+ "E4b baseline-vs-shadow via observer hook (executed=Mock, shadow=custom HoldPolicy)": {
+  "status": "success",
+  "observer_event_fields": {
+   "RunPolicyStarted": [
+    "schema_version",
+    "run_id",
+    "event_seq",
+    "monotonic_ns",
+    "utc_ns",
+    "robot_name",
+    "policy",
+    "instruction",
+    "control_frequency",
+    "action_horizon",
+    "total_steps",
+    "async_rtc"
+   ],
+   "RunPolicyStep": [
+    "schema_version",
+    "run_id",
+    "event_seq",
+    "monotonic_ns",
+    "utc_ns",
+    "applied_action_index",
+    "legacy_step_index",
+    "observation",
+    "action",
+    "observation_is_chunk_reused",
+    "observation_age_steps",
+    "action_resolution",
+    "applied_action_keys",
+    "unresolved_action_keys",
+    "elapsed_s",
+    "sim_time_s",
+    "legacy_hook_outcome"
+   ],
+   "RunPolicyEnded": [
+    "schema_version",
+    "run_id",
+    "event_seq",
+    "monotonic_ns",
+    "utc_ns",
+    "outcome",
+    "stopped_reason",
+    "applied_actions",
+    "legacy_steps_used",
+    "action_errors",
+    "elapsed_s",
+    "error_type",
+    "error_message",
+    "observer_failures"
+   ]
+  },
+  "rows": 60,
+  "observer_errors": [],
+  "mean_abs_divergence": 0.1769,
+  "executed_sample": {
+   "Rotation": 0.0,
+   "Pitch": 0.17399999999999993,
+   "Elbow": 0.43301270189221935,
+   "Wrist_Pitch": 6.123233995736766e-17,
+   "Wrist_Roll": -0.4330127018922192,
+   "Jaw": -0.17399999999999993
+  },
+  "custom_policy_abc_ok": true,
+  "trace": "/home/ec2-user/spike/out/report/e4b_baseline_vs_shadow.jsonl"
+ },
+ "E5 emit RoboRouter-shaped Rollouts + draft RobotProfile": {
+  "written": [
+   "rollout_sim.json",
+   "rollout_shadow.json",
+   "robot_profile_draft.json"
+  ],
+  "joint_names": [
+   "Rotation",
+   "Pitch",
+   "Elbow",
+   "Wrist_Pitch",
+   "Wrist_Roll",
+   "Jaw"
+  ],
+  "cameras": {
+   "default": [
+    480,
+    640,
+    3
+   ],
+   "front": [
+    480,
+    640,
+    3
+   ]
+  },
+  "artifacts": 1
+ }
+}

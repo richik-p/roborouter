@@ -74,6 +74,43 @@ Open model family plus simulation/training/deployment ecosystem tied to NVIDIA's
 
 Important supply/integration ecosystem. RoboRouter remains cross-vendor.
 
+## Strands Robots (AWS Strands Labs)
+
+**Snapshot:** 2026-10-02, release v0.5.2. Hands-on findings are in
+[`STRANDS_ROBOTS_SPIKE.md`](STRANDS_ROBOTS_SPIKE.md).
+
+### What it does
+
+Apache-2.0 Python runtime built by AWS teams. An LLM agent receives a `Robot()` as a
+tool; the robot runs a policy in a closed loop in MuJoCo, Isaac, or Newton, or on
+hardware through LeRobot drivers and a ROS 2 bridge. At v0.5.2 it ships 74 robots,
+14 policy providers, 33 robot-to-model key and unit maps, seeded rollouts, a
+benchmark protocol, dataset recording, fleet mesh, and a local operator dashboard.
+It is labelled experimental and carries no support commitment.
+
+### Overlap
+
+High with the robot-side half RoboRouter has not built (M4-M6: `rr-agent`,
+`RobotAdapter`, hardware I/O) and with policy-adapter plumbing. Partial with the
+evaluation runtime. Low with the catalog, graded compatibility, hosted evaluation,
+and immutable Rollouts.
+
+### Strategy
+
+Build on its policy layer and embodiment maps rather than writing drivers and
+adapters. Keep the shadow loop, execution identity, and safety authority in
+RoboRouter. Pin exact releases. Ingest its embodiment maps as compatibility evidence,
+and offer RoboRouter's compatibility answer as a tool inside its ecosystem.
+
+RoboRouter differentiation:
+
+- a checkpoint-level catalog with licenses, pinned revisions, and reproduced scores,
+  including negative results;
+- a graded compatibility answer before anything is installed or run;
+- structural shadow mode on real robots, which the runtime does not provide;
+- execution identity on every result, which its payloads do not carry;
+- hosted evaluation and shareable Rollouts for people with no GPU or robot.
+
 ## Vertical robotics platforms
 
 Products such as robot-specific training/control platforms can overlap heavily for their supported hardware but often optimize a more vertically integrated experience.

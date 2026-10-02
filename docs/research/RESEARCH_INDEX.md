@@ -8,6 +8,8 @@ by the original manifest were absent; reconstructed files are labeled as such.
 - `OPENROUTER_LESSONS.md` — useful and unsafe parts of the analogy.
 - `MODEL_LANDSCAPE.md` — implementation-oriented launch candidates.
 - `SOURCES.md` — primary-source index.
+- `STRANDS_ROBOTS_SPIKE.md` — hands-on evaluation of Strands Robots as the `rr-agent`
+  runtime (2026-10-02), with scripts and outputs in `strands-spike/`.
 
 Before pinning an upstream dependency, verify its current official release,
 license, artifact requirements, and runnable example and record the date.

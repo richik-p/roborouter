@@ -131,7 +131,7 @@ def test_materialized_environment_bounds_the_run_to_one_seed(tmp_path: Path) -> 
 def test_select_summary_prefers_the_payload_with_a_success_rate() -> None:
     nested = {"benchmarks": [{"name": "libero_object", "success_rate": 0.9, "num_episodes": 10}]}
     flat = {"success_rate": 1.0, "num_episodes": 10}
-    aggregate = {"benchmark": "LIBEROBenchmark", "mean_success": 1.0, "num_episodes_total": 1, "num_errors": 0, "seed": 7}
+    aggregate = {"benchmark": "LIBEROBenchmark", "mean_success": 1.0, "num_episodes_total": 1, "seed": 7}
     assert _select_summary([{"episode": 0, "success": True}, flat]) is flat
     assert _select_summary([nested])["success_rate"] == 0.9
     assert _select_summary([{"sid": "x", "steps": 111}, aggregate]) is aggregate

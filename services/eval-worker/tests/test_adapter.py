@@ -131,8 +131,26 @@ def test_materialized_environment_bounds_the_run_to_one_seed(tmp_path: Path) -> 
 def test_select_summary_prefers_the_payload_with_a_success_rate() -> None:
     nested = {"benchmarks": [{"name": "libero_object", "success_rate": 0.9, "num_episodes": 10}]}
     flat = {"success_rate": 1.0, "num_episodes": 10}
+    aggregate = {"benchmark": "LIBEROBenchmark", "mean_success": 1.0, "num_episodes_total": 1, "num_errors": 0, "seed": 7}
     assert _select_summary([{"episode": 0, "success": True}, flat]) is flat
     assert _select_summary([nested])["success_rate"] == 0.9
+    assert _select_summary([{"sid": "x", "steps": 111}, aggregate]) is aggregate
+
+
+def test_map_results_reads_the_v040_aggregate_format(tmp_path: Path) -> None:
+    adapter = HarnessAdapter(tmp_path, tmp_path / "output")
+    seed_dir = tmp_path / "seed-7"
+    seed_dir.mkdir()
+    (seed_dir / "LIBEROBenchmark_aggregate.json").write_text(
+        '{"benchmark": "LIBEROBenchmark", "harness_version": "0.8.0", "seed": 7, "protocol_version": 1,'
+        ' "mean_success": 0.9, "num_episodes_total": 10, "num_errors": 0, "tasks": [{"episodes": [{"steps": 111}]}]}'
+    )
+    [rollout] = adapter._map_results(_job([7]), {7: (seed_dir, 500)})
+    assert rollout.success is False
+    assert rollout.metrics["success_rate"] == 0.9
+    assert rollout.metrics["mean_success"] == 0.9
+    assert rollout.metrics["num_episodes_total"] == 10
+    assert "protocol_version" not in rollout.metrics
 
 
 def test_map_results_emits_one_rollout_per_seed_with_duration(tmp_path: Path) -> None:

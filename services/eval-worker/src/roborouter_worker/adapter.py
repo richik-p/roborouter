@@ -213,6 +213,7 @@ class HarnessAdapter:
                     str(environment_path),
                     "--output-dir",
                     str(seed_dir),
+                    "--record-video",
                     "--yes",
                 ]
                 started = time.monotonic()
@@ -253,13 +254,15 @@ class HarnessAdapter:
             if not payloads:
                 raise HarnessError(f"evaluation for seed {seed} produced no readable JSON result")
             summary = _select_summary(payloads)
-            success_rate = summary.get("success_rate")
-            success = bool(summary.get("success", isinstance(success_rate, int | float) and success_rate >= 1))
+            success_rate = _success_rate(summary)
+            success = bool(summary.get("success", success_rate is not None and success_rate >= 1))
             metrics = {
                 key: value
                 for key, value in summary.items()
-                if isinstance(value, bool | int | float) and key not in {"seed"}
+                if isinstance(value, bool | int | float) and key not in {"seed", "protocol_version"}
             }
+            if success_rate is not None:
+                metrics["success_rate"] = success_rate
             metrics.setdefault("episodes_per_task", self.episodes_per_task)
             rollouts.append(
                 Rollout(
@@ -320,17 +323,32 @@ def _read_json_payloads(directory: Path) -> list[dict[str, Any]]:
     return payloads
 
 
+RATE_KEYS = ("success_rate", "mean_success")
+
+
+def _success_rate(summary: dict[str, Any]) -> float | None:
+    for key in RATE_KEYS:
+        value = summary.get(key)
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            return float(value)
+    return None
+
+
 def _select_summary(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    """Pick the run summary: the first mapping, at most two levels deep, that reports a success rate."""
+    """Pick the run summary: the first mapping, at most two levels deep, that reports a success rate.
+
+    vla-eval v0.4.0 writes ``<Benchmark>_aggregate.json`` with ``mean_success``; older
+    and merged summaries use ``success_rate``.
+    """
     for payload in payloads:
-        if "success_rate" in payload:
+        if _success_rate(payload) is not None:
             return payload
     for payload in payloads:
         for value in payload.values():
-            if isinstance(value, dict) and "success_rate" in value:
+            if isinstance(value, dict) and _success_rate(value) is not None:
                 return value
             if isinstance(value, list):
                 for item in value:
-                    if isinstance(item, dict) and "success_rate" in item:
+                    if isinstance(item, dict) and _success_rate(item) is not None:
                         return item
     return payloads[0]

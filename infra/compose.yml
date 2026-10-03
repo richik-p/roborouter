@@ -16,8 +16,11 @@ services:
       retries: 20
 
   minio:
-    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
-    command: server /data --console-address ":9001"
+    # MinIO stopped publishing minio/minio and minio/mc to Docker Hub (and quay refuses
+    # pulls), so the original digests no longer resolve on a fresh host. These Bitnami
+    # legacy images were verified by digest pull on 2026-10-02; they are unmaintained,
+    # so pick a maintained S3-compatible store before any public deployment.
+    image: docker.io/bitnamilegacy/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c
     environment:
       MINIO_ROOT_USER: roborouter
       MINIO_ROOT_PASSWORD: roborouter-local-only
@@ -25,10 +28,10 @@ services:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
     volumes:
-      - minio-data:/data
+      - minio-data:/bitnami/minio/data
 
   minio-init:
-    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    image: docker.io/bitnamilegacy/minio-client@sha256:00dcc4e58ada0df45bb7d9ee435af98295f96c27c3c68292ce78ec700a87b511
     depends_on:
       - minio
     entrypoint: >

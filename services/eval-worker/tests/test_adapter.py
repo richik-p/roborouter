@@ -1,3 +1,7 @@
+import asyncio
+import http.server
+import os
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -125,7 +129,65 @@ def test_materialized_environment_bounds_the_run_to_one_seed(tmp_path: Path) -> 
     assert entry["params"]["suite"] == "libero_object"
     digest = "sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413"
     assert payload["docker"]["image"].endswith(f"@{digest}")
-    assert HarnessAdapter.health_url(materialized) == "http://localhost:8000/health"
+    assert payload["server"]["url"] == "ws://127.0.0.1:8000"
+    assert HarnessAdapter.health_url(materialized) == "http://127.0.0.1:8000/health"
+
+
+@pytest.mark.asyncio
+async def test_policy_config_pins_the_server_port(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "harness"
+    config_dir = root / "configs" / "model_servers" / "lerobot"
+    config_dir.mkdir(parents=True)
+    (config_dir / "_base.yaml").write_text("args:\n  port: 8000\n")
+    source = config_dir / "pi05_libero.yaml"
+    source.write_text("extends: _base.yaml\nargs:\n  checkpoint: mutable/main\n")
+    monkeypatch.setattr("roborouter_worker.adapter.snapshot_download", lambda *, repo_id, revision: str(tmp_path))
+    adapter = HarnessAdapter(root, tmp_path / "output", server_port=8123)
+
+    materialized = await adapter.materialize_policy_config(_job([7]), source, tmp_path)
+
+    assert yaml.safe_load(materialized.read_text())["args"]["port"] == 8123
+
+
+@pytest.mark.asyncio
+async def test_adapter_refuses_a_port_that_already_answers(tmp_path: Path) -> None:
+    class Quiet(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 - http.server API
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *args):
+            return
+
+    httpd = http.server.HTTPServer(("127.0.0.1", 0), Quiet)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        adapter = HarnessAdapter(tmp_path, tmp_path / "output", server_port=httpd.server_port)
+        with pytest.raises(HarnessError, match="already answers"):
+            await adapter.assert_port_free(f"http://127.0.0.1:{httpd.server_port}/health")
+    finally:
+        httpd.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_stop_process_group_kills_children_too() -> None:
+    process = await asyncio.create_subprocess_exec(
+        "bash", "-c", "sleep 300 & echo child=$!; wait", stdout=asyncio.subprocess.PIPE, start_new_session=True
+    )
+    line = await process.stdout.readline()
+    child_pid = int(line.decode().strip().split("=")[1])
+
+    await HarnessAdapter.stop_process_group(process, grace_s=5)
+
+    assert process.returncode is not None
+    for _ in range(50):
+        try:
+            os.kill(child_pid, 0)
+        except ProcessLookupError:
+            break
+        await asyncio.sleep(0.1)
+    else:
+        pytest.fail("child process survived the group stop")
 
 
 def test_select_summary_prefers_the_payload_with_a_success_rate() -> None:

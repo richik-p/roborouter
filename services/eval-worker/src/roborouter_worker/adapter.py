@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import shutil
+import signal
 import subprocess
 import time
 import uuid
@@ -57,13 +58,17 @@ class HarnessAdapter:
         *,
         episodes_per_task: int = 1,
         server_ready_timeout_s: float = 1800.0,
+        server_port: int = 8000,
     ) -> None:
         self.root = root.resolve()
         self.output_root = output_root.resolve()
         if episodes_per_task <= 0:
             raise ValueError("episodes_per_task must be positive")
+        if not 1 <= server_port <= 65535:
+            raise ValueError("server_port must be a TCP port")
         self.episodes_per_task = episodes_per_task
         self.server_ready_timeout_s = server_ready_timeout_s
+        self.server_port = server_port
 
     def validate(self, job: EvaluationJob) -> tuple[Path, Path]:
         if not self.root.exists():
@@ -106,6 +111,7 @@ class HarnessAdapter:
         if inherited:
             payload["extends"] = str((source.parent / inherited).resolve())
         payload.setdefault("args", {})["checkpoint"] = str(Path(snapshot).resolve())
+        payload["args"]["port"] = self.server_port
         materialized = output_dir / "roborouter-policy.yaml"
         materialized.write_text(yaml.safe_dump(payload, sort_keys=False))
         return materialized
@@ -131,6 +137,10 @@ class HarnessAdapter:
             raise HarnessError("LIBERO environment config has no Docker image")
         repository = image.split("@", 1)[0].removesuffix(":latest")
         payload["docker"]["image"] = f"{repository}@{LIBERO_IMAGE_DIGEST}"
+        server = payload.get("server")
+        if not isinstance(server, dict):
+            server = payload["server"] = {}
+        server["url"] = f"ws://127.0.0.1:{self.server_port}"
         benchmarks = payload.get("benchmarks")
         if (seed is not None or episodes_per_task is not None) and not isinstance(benchmarks, list):
             raise HarnessError("environment config has no benchmarks list to bound")
@@ -151,6 +161,42 @@ class HarnessAdapter:
         parsed = urlparse(url)
         scheme = "https" if parsed.scheme == "wss" else "http"
         return f"{scheme}://{parsed.hostname or 'localhost'}:{parsed.port or 8000}/health"
+
+    @staticmethod
+    async def _answers(url: str) -> bool:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            try:
+                await client.get(url)
+                return True
+            except httpx.HTTPError:
+                return False
+
+    async def assert_port_free(self, url: str) -> None:
+        """Refuse to run if some other server already answers where ours will listen.
+
+        The benchmark would otherwise be scored against a model this job did not start
+        and would label the result with this job's policy identity.
+        """
+        if await self._answers(url):
+            raise HarnessError(
+                f"a model server already answers at {url}; refusing to evaluate against a server this job did not start"
+            )
+
+    @staticmethod
+    async def stop_process_group(process: asyncio.subprocess.Process, grace_s: float = 10.0) -> None:
+        """Terminate a subprocess and everything it spawned (it was started in its own session)."""
+        if process.returncode is not None:
+            return
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            try:
+                os.killpg(os.getpgid(process.pid), sig)
+            except ProcessLookupError:
+                return
+            try:
+                await asyncio.wait_for(process.wait(), timeout=grace_s)
+                return
+            except TimeoutError:
+                continue
 
     async def wait_for_server(self, server: asyncio.subprocess.Process, url: str, log_path: Path) -> float:
         """Block until the model server answers ``/health`` or exits.
@@ -180,7 +226,8 @@ class HarnessAdapter:
         output_dir.mkdir(parents=True, exist_ok=False)
         policy_path = await self.materialize_policy_config(job, policy_source, output_dir)
         server_log = output_dir / "model-server.log"
-        health = self.health_url(environment_source)
+        health = f"http://127.0.0.1:{self.server_port}/health"
+        await self.assert_port_free(health)
 
         with server_log.open("wb") as server_out:
             server = await asyncio.create_subprocess_exec(
@@ -191,12 +238,15 @@ class HarnessAdapter:
                 cwd=self.root,
                 stdout=server_out,
                 stderr=asyncio.subprocess.STDOUT,
+                start_new_session=True,
             )
         process: asyncio.subprocess.Process | None = None
         runs: dict[int, tuple[Path, int]] = {}
         try:
             ready_s = await self.wait_for_server(server, health, server_log)
-            (output_dir / "model-server-ready.json").write_text(json.dumps({"ready_after_s": round(ready_s, 1)}))
+            (output_dir / "model-server-ready.json").write_text(
+                json.dumps({"ready_after_s": round(ready_s, 1), "port": self.server_port, "server_pid": server.pid})
+            )
             for seed in job.request.seeds:
                 seed_dir = output_dir / f"seed-{seed}"
                 seed_dir.mkdir()
@@ -223,6 +273,7 @@ class HarnessAdapter:
                     env={**os.environ, "ROBOROUTER_SEED": str(seed)},
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.STDOUT,
+                    start_new_session=True,
                 )
                 output, _ = await process.communicate()
                 (seed_dir / "vla-eval.log").write_bytes(output)
@@ -231,18 +282,16 @@ class HarnessAdapter:
                 runs[seed] = (seed_dir, int((time.monotonic() - started) * 1000))
                 process = None
         finally:
-            if process is not None and process.returncode is None:
-                process.terminate()
-                try:
-                    await asyncio.wait_for(process.wait(), timeout=10)
-                except TimeoutError:
-                    process.kill()
-            if server.returncode is None:
-                server.terminate()
-                try:
-                    await asyncio.wait_for(server.wait(), timeout=10)
-                except TimeoutError:
-                    server.kill()
+            if process is not None:
+                await self.stop_process_group(process)
+            await self.stop_process_group(server)
+            # The next job must not inherit this server: wait for the port to go silent.
+            for _ in range(12):
+                if not await self._answers(health):
+                    break
+                await asyncio.sleep(5)
+            else:
+                raise HarnessError(f"model server still answers at {health} after shutdown; refusing to leave it")
 
         return self._map_results(job, runs)
 

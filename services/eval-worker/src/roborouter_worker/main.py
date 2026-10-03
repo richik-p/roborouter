@@ -33,6 +33,8 @@ class WorkerSettings(BaseSettings):
     episodes_per_task: int = 1
     # Cold starts can include building the model server's own environment.
     server_ready_timeout_s: float = 1800.0
+    # The model server this worker starts; one port per worker on a shared host.
+    server_port: int = 8000
 
 
 def _artifact_kind(path: Path) -> str | None:
@@ -125,6 +127,7 @@ async def work_forever(settings: WorkerSettings) -> None:
         settings.worker_output_root,
         episodes_per_task=settings.episodes_per_task,
         server_ready_timeout_s=settings.server_ready_timeout_s,
+        server_port=settings.server_port,
     )
     async with httpx.AsyncClient(base_url=settings.api_base_url, headers=headers, timeout=30) as client:
         response = await client.post("/private/workers/register", json=capabilities.model_dump(mode="json"))

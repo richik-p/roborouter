@@ -50,6 +50,9 @@ VLA_EVAL_ROOT=vendor/vla-evaluation-harness
 WORKER_OUTPUT_ROOT=artifacts/worker
 EPISODES_PER_TASK=1
 SERVER_READY_TIMEOUT_S=1800
+SERVER_PORT=8000
+ACT_TIMEOUT_S=300
+COMPILE_MODEL=false
 ```
 
 Each requested seed becomes one harness run with `EPISODES_PER_TASK` episodes per

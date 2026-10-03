@@ -37,8 +37,9 @@ class WorkerSettings(BaseSettings):
     server_port: int = 8000
     # Per-action deadline for the harness client; compile warm-ups exceed the upstream 30 s.
     act_timeout_s: float = 300.0
-    # None keeps each checkpoint's compile setting; False avoids torch.compile warm-up stalls.
-    compile_model: bool | None = None
+    # False (default) runs policies eagerly: pi0.5's checkpoint ships max-autotune compile,
+    # whose warm-up ran past 8 minutes on an A10G. None keeps the checkpoint's setting.
+    compile_model: bool | None = False
 
 
 def _artifact_kind(path: Path) -> str | None:

@@ -113,10 +113,31 @@ verified Rollout. Evidence is in
 - **Single-box topology** instead of the TLS runbook for this first run; the harness's
   model server owns port 8000, so the API moved to 8800.
 
+- **The worker owns its model-server port.** The first π₀.₅ attempt reported the
+  server ready at 0 s: the previous job's server had survived on port 8000 because
+  terminating the `vla-eval serve` wrapper left its Python child alive, so the run would
+  have scored MolmoAct2 under π₀.₅'s identity. The job was canceled before any result
+  was recorded. The adapter now refuses to start if anything answers on its port,
+  starts the server and benchmark in their own process groups and kills the groups,
+  and waits for the port to go silent after each job.
+- **Errored episodes fail the job.** The harness isolates per-episode errors and
+  exits 0; the first completed π₀.₅ Object job (`eval-047fd20c`) had all ten episodes
+  time out on their first action and was mapped to a `success=false` Rollout. That
+  record is superseded and must not be cited as a task failure. The adapter now
+  raises a typed infrastructure failure when any episode errored.
+- **Policies run eagerly by default.** The π₀.₅ checkpoint ships
+  `compile_model: true` with `max-autotune`; its warm-up ran past eight minutes at 0 %
+  GPU utilization on the A10G, far beyond the harness's 30 s per-action default.
+  `COMPILE_MODEL=false` is the worker default and `ACT_TIMEOUT_S` (300 s) is written
+  into the benchmark config; both are recorded in each Rollout's identity.
+
 ## Progress log
 
 - 2026-10-02 — First RoboRouter-executed Rollout (MolmoAct2, LIBERO Goal, seed 7,
   10/10). π₀.₅ blocked on gated PaliGemma access; next is that run and the matched pair.
+- 2026-10-03 — Gated access granted. First π₀.₅ attempt exposed the port-ownership
+  defect (canceled, nothing recorded); second exposed the compile stall and the
+  errored-episode mapping (superseded record). Both fixed; matched sequence rerun.
 
 ## Open items
 

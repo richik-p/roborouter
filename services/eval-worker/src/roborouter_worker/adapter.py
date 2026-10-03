@@ -59,6 +59,8 @@ class HarnessAdapter:
         episodes_per_task: int = 1,
         server_ready_timeout_s: float = 1800.0,
         server_port: int = 8000,
+        act_timeout_s: float = 300.0,
+        compile_model: bool | None = None,
     ) -> None:
         self.root = root.resolve()
         self.output_root = output_root.resolve()
@@ -66,9 +68,17 @@ class HarnessAdapter:
             raise ValueError("episodes_per_task must be positive")
         if not 1 <= server_port <= 65535:
             raise ValueError("server_port must be a TCP port")
+        if act_timeout_s <= 0:
+            raise ValueError("act_timeout_s must be positive")
         self.episodes_per_task = episodes_per_task
         self.server_ready_timeout_s = server_ready_timeout_s
         self.server_port = server_port
+        # Per-action deadline the harness client applies; the upstream default of 30 s is
+        # shorter than a torch.compile warm-up on smaller GPUs.
+        self.act_timeout_s = act_timeout_s
+        # None keeps the checkpoint's own compile setting; False/True override it and are
+        # recorded in the Rollout identity.
+        self.compile_model = compile_model
 
     def validate(self, job: EvaluationJob) -> tuple[Path, Path]:
         if not self.root.exists():
@@ -112,6 +122,8 @@ class HarnessAdapter:
             payload["extends"] = str((source.parent / inherited).resolve())
         payload.setdefault("args", {})["checkpoint"] = str(Path(snapshot).resolve())
         payload["args"]["port"] = self.server_port
+        if self.compile_model is not None:
+            payload["args"]["compile_model"] = self.compile_model
         materialized = output_dir / "roborouter-policy.yaml"
         materialized.write_text(yaml.safe_dump(payload, sort_keys=False))
         return materialized
@@ -141,6 +153,7 @@ class HarnessAdapter:
         if not isinstance(server, dict):
             server = payload["server"] = {}
         server["url"] = f"ws://127.0.0.1:{self.server_port}"
+        server["timeout"] = self.act_timeout_s
         benchmarks = payload.get("benchmarks")
         if (seed is not None or episodes_per_task is not None) and not isinstance(benchmarks, list):
             raise HarnessError("environment config has no benchmarks list to bound")
@@ -303,6 +316,11 @@ class HarnessAdapter:
             if not payloads:
                 raise HarnessError(f"evaluation for seed {seed} produced no readable JSON result")
             summary = _select_summary(payloads)
+            errored, total, reason = _episode_errors(summary)
+            if errored:
+                # An episode the harness could not run is a runtime failure, not a task failure:
+                # the job fails with a typed error and no Rollout is fabricated from it.
+                raise HarnessError(f"{errored} of {total} episodes errored for seed {seed}: {reason}")
             success_rate = _success_rate(summary)
             success = bool(summary.get("success", success_rate is not None and success_rate >= 1))
             metrics = {
@@ -344,6 +362,10 @@ class HarnessAdapter:
                         "policy_config": POLICY_CONFIGS[job.request.policy_id],
                         "environment_config": ENVIRONMENT_CONFIGS[job.request.environment_id],
                         "protocol": f"roborouter.seed-run.v1 episodes_per_task={self.episodes_per_task}",
+                        "act_timeout_s": str(self.act_timeout_s),
+                        "compile_model": (
+                            "checkpoint-default" if self.compile_model is None else str(self.compile_model)
+                        ),
                     },
                     evidence_note=(
                         "Executed by a RoboRouter remote evaluation worker: one harness run per seed "
@@ -384,6 +406,29 @@ def _success_rate(summary: dict[str, Any]) -> float | None:
         if isinstance(value, int | float) and not isinstance(value, bool):
             return float(value)
     return None
+
+
+def _episode_errors(summary: dict[str, Any]) -> tuple[int, int, str]:
+    """Count episodes the harness recorded as errored (timeouts, server faults), with the first reason."""
+    errored = 0
+    total = 0
+    reason = ""
+    for task in summary.get("tasks") or []:
+        for episode in task.get("episodes") or [] if isinstance(task, dict) else []:
+            if not isinstance(episode, dict):
+                continue
+            total += 1
+            failed = (
+                episode.get("status") == "error" or bool(episode.get("failure_reason")) or bool(episode.get("error"))
+            )
+            if failed:
+                errored += 1
+                reason = reason or str(episode.get("failure_reason") or episode.get("error") or episode.get("status"))
+    declared = summary.get("num_errors")
+    if isinstance(declared, int) and not isinstance(declared, bool) and declared > errored:
+        errored = declared
+        reason = reason or "num_errors reported by the harness"
+    return errored, max(total, int(summary.get("num_episodes_total") or 0)), reason
 
 
 def _select_summary(payloads: list[dict[str, Any]]) -> dict[str, Any]:

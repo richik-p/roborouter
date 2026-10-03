@@ -35,6 +35,10 @@ class WorkerSettings(BaseSettings):
     server_ready_timeout_s: float = 1800.0
     # The model server this worker starts; one port per worker on a shared host.
     server_port: int = 8000
+    # Per-action deadline for the harness client; compile warm-ups exceed the upstream 30 s.
+    act_timeout_s: float = 300.0
+    # None keeps each checkpoint's compile setting; False avoids torch.compile warm-up stalls.
+    compile_model: bool | None = None
 
 
 def _artifact_kind(path: Path) -> str | None:
@@ -128,6 +132,8 @@ async def work_forever(settings: WorkerSettings) -> None:
         episodes_per_task=settings.episodes_per_task,
         server_ready_timeout_s=settings.server_ready_timeout_s,
         server_port=settings.server_port,
+        act_timeout_s=settings.act_timeout_s,
+        compile_model=settings.compile_model,
     )
     async with httpx.AsyncClient(base_url=settings.api_base_url, headers=headers, timeout=30) as client:
         response = await client.post("/private/workers/register", json=capabilities.model_dump(mode="json"))

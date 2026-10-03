@@ -130,6 +130,7 @@ def test_materialized_environment_bounds_the_run_to_one_seed(tmp_path: Path) -> 
     digest = "sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413"
     assert payload["docker"]["image"].endswith(f"@{digest}")
     assert payload["server"]["url"] == "ws://127.0.0.1:8000"
+    assert payload["server"]["timeout"] == 300.0
     assert HarnessAdapter.health_url(materialized) == "http://127.0.0.1:8000/health"
 
 
@@ -147,6 +148,11 @@ async def test_policy_config_pins_the_server_port(tmp_path: Path, monkeypatch: p
     materialized = await adapter.materialize_policy_config(_job([7]), source, tmp_path)
 
     assert yaml.safe_load(materialized.read_text())["args"]["port"] == 8123
+    assert "compile_model" not in yaml.safe_load(materialized.read_text())["args"]
+
+    eager = HarnessAdapter(root, tmp_path / "output", compile_model=False)
+    materialized = await eager.materialize_policy_config(_job([7]), source, tmp_path)
+    assert yaml.safe_load(materialized.read_text())["args"]["compile_model"] is False
 
 
 @pytest.mark.asyncio
@@ -245,3 +251,25 @@ def test_map_results_refuses_a_seed_without_results(tmp_path: Path) -> None:
     empty.mkdir()
     with pytest.raises(HarnessError, match="no readable JSON result"):
         adapter._map_results(_job([7]), {7: (empty, 10)})
+
+
+def test_map_results_fails_the_job_when_episodes_errored(tmp_path: Path) -> None:
+    adapter = HarnessAdapter(tmp_path, tmp_path / "output")
+    seed_dir = tmp_path / "seed-7"
+    seed_dir.mkdir()
+    (seed_dir / "LIBEROBenchmark_aggregate.json").write_text(
+        '{"mean_success": 0.0, "num_episodes_total": 2, "seed": 7, "tasks": [{"episodes": ['
+        '{"status": "error", "failure_reason": "timeout", "steps": 0}, {"metrics": {"success": true}, "steps": 80}]}]}'
+    )
+    with pytest.raises(HarnessError, match="1 of 2 episodes errored for seed 7: timeout"):
+        adapter._map_results(_job([7]), {7: (seed_dir, 500)})
+
+
+def test_map_results_records_timeout_and_compile_settings_in_identity(tmp_path: Path) -> None:
+    adapter = HarnessAdapter(tmp_path, tmp_path / "output", act_timeout_s=120, compile_model=False)
+    seed_dir = tmp_path / "seed-7"
+    seed_dir.mkdir()
+    (seed_dir / "summary.json").write_text('{"mean_success": 1.0, "num_episodes_total": 1}')
+    [rollout] = adapter._map_results(_job([7]), {7: (seed_dir, 10)})
+    assert rollout.runtime_identity["act_timeout_s"] == "120"
+    assert rollout.runtime_identity["compile_model"] == "False"

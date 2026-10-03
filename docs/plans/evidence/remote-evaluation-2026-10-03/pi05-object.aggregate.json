@@ -1,0 +1,291 @@
+{
+  "benchmark": "LIBEROBenchmark_libero_object",
+  "mode": "sync",
+  "harness_version": "0.4.0",
+  "created_at": "2026-10-03T01:12:38.452761+00:00",
+  "tasks": [
+    {
+      "task": "pick up the alphabet soup and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "b187a1cb-3d2b-4c39-961d-792e51644f11",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 134,
+          "elapsed_sec": 28.899,
+          "name": "pick up the alphabet soup and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 0,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 134.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the bbq sauce and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "c70141e6-2e18-4974-9a65-cc07f3892ddb",
+          "episode_id": 0,
+          "metrics": {
+            "success": false
+          },
+          "steps": 280,
+          "elapsed_sec": 32.508,
+          "name": "pick up the bbq sauce and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 3,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 280.0,
+      "mean_success": 0.0
+    },
+    {
+      "task": "pick up the butter and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "7f9802e1-29ec-4a83-8c08-303c2fca2dcb",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 158,
+          "elapsed_sec": 19.824,
+          "name": "pick up the butter and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 6,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 158.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the chocolate pudding and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "a0e8f126-5764-49b7-b5d6-316c4c37397d",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 143,
+          "elapsed_sec": 18.301,
+          "name": "pick up the chocolate pudding and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 8,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 143.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the cream cheese and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "23a9da74-4c4c-4b54-9539-f432a68dae46",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 121,
+          "elapsed_sec": 15.803,
+          "name": "pick up the cream cheese and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 1,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 121.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the ketchup and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "23210b7c-1392-438c-8a47-753aa54eef15",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 148,
+          "elapsed_sec": 18.755,
+          "name": "pick up the ketchup and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 4,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 148.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the milk and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "6419c267-3625-423f-a317-458846919ef0",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 128,
+          "elapsed_sec": 16.719,
+          "name": "pick up the milk and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 7,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 128.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the orange juice and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "0ead0c64-ed12-4906-baa4-06df43e56c5d",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 150,
+          "elapsed_sec": 18.596,
+          "name": "pick up the orange juice and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 9,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 150.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the salad dressing and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "4385a87f-26c3-49f6-8b70-f23f6b7643e4",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 114,
+          "elapsed_sec": 15.108,
+          "name": "pick up the salad dressing and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 2,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 114.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "pick up the tomato sauce and place it in the basket",
+      "episodes": [
+        {
+          "sid": "8f2e4b15-016f-4061-9481-48e7f048bb10",
+          "eid": "7521f99c-3467-48af-b7a1-c0007cae7560",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 118,
+          "elapsed_sec": 15.134,
+          "name": "pick up the tomato sauce and place it in the basket",
+          "suite": "libero_object",
+          "task_id": 5,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 118.0,
+      "mean_success": 1.0
+    }
+  ],
+  "config": {
+    "benchmark": "vla_eval.benchmarks.libero.benchmark:LIBEROBenchmark",
+    "mode": "sync",
+    "name": null,
+    "subname": "libero_object",
+    "episodes_per_task": 1,
+    "max_steps": null,
+    "max_tasks": null,
+    "tasks": null,
+    "params": {
+      "num_steps_wait": 10,
+      "seed": 7,
+      "suite": "libero_object"
+    },
+    "recording": {
+      "record_video": true
+    },
+    "hz": 10.0,
+    "throughput_mode": false,
+    "paced": true,
+    "wait_first_action": false
+  },
+  "eval_id": "aa48a566-ef21-443e-95d2-0e843629ef9b-LIBEROBenchmark_libero_object",
+  "server_info": {
+    "harness_version": "0.4.0",
+    "protocol_version": 1,
+    "model_server": "LeRobotModelServer",
+    "capabilities": {},
+    "observation_params": {
+      "send_state": true,
+      "send_wrist_image": true
+    },
+    "action_spec": {
+      "actions": {
+        "name": "raw",
+        "dims": 0,
+        "format": "raw"
+      }
+    },
+    "observation_spec": {
+      "image": {
+        "name": "image",
+        "dims": 0,
+        "format": "rgb_hwc_uint8"
+      },
+      "language": {
+        "name": "language",
+        "dims": 0,
+        "format": "language"
+      },
+      "state": {
+        "name": "raw",
+        "dims": 0,
+        "format": "raw"
+      }
+    }
+  },
+  "seed": 7,
+  "metric_keys": {
+    "success": "mean"
+  },
+  "mean_success": 0.9,
+  "num_episodes_total": 10
+}

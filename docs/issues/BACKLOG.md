@@ -13,12 +13,12 @@ This is the local issue source until a GitHub remote exists.
 - [x] M1-04 Explore and policy UX
 - [x] M2-01 evaluation orchestration
 - [x] M2-02 outbound remote worker implementation
-- [ ] M2-03 π₀.₅/LIBERO adapter — worker verified with MolmoAct2 on 2026-10-02; π₀.₅ itself blocked on gated PaliGemma access (needs an HF token)
+- [x] M2-03 π₀.₅/LIBERO adapter — π₀.₅ executed on LIBERO Object (9/10) and Goal (10/10) on 2026-10-03; needs `HF_TOKEN` with PaliGemma access
 - [x] M2-04 artifact and Rollout persistence
 - [x] M2-05 evaluation UX
 - [x] M3-01 MolmoAct2 runner configuration
-- [ ] M3-02 comparable evaluation sets — MolmoAct2 half of the LIBERO Goal pair executed (seed 7); π₀.₅ half pending gated access
-- [ ] M3-03 completed-result Compare UX and browser regression path
+- [x] M3-02 comparable evaluation sets — π₀.₅ and MolmoAct2 LIBERO Goal pair executed at seed 7 with identical comparison identity (2026-10-03)
+- [ ] M3-03 completed-result Compare UX and browser regression path — real matched pair now exists; browser check against a seeded real pair still pending
 - [ ] M4 UAV simulation proof
 - [ ] M5 read-only and shadow pilot
 - [ ] M6 supervised physical actuation

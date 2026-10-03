@@ -74,6 +74,30 @@ verified Rollout. Evidence is in
 | Verification | Every artifact's SHA-256, byte count, media type and object metadata match the private object; identical completion replay returned 200 with Rollout and artifact counts unchanged |
 | Upstream check | Harness smoke config with the same server: 1/1 success before any RoboRouter job |
 
+### Evidence record, 2026-10-03 (π₀.₅ and the matched pair)
+
+Same host and topology, RoboRouter `beta` at `1576d89` (eager policies,
+`ACT_TIMEOUT_S=300`), worker `gpu-worker-01`, all at seed 7 with one episode per task.
+Files are in [`evidence/remote-evaluation-2026-10-03/`](evidence/remote-evaluation-2026-10-03/).
+
+| Job | Policy | Suite | Server ready | Result | Artifacts |
+|---|---|---|---|---|---|
+| `eval-c8ae9612` | π₀.₅ `@8e174154` | LIBERO Object | 135 s | 9/10 (`bbq sauce` ran to its 280-step horizon) | 26, verified |
+| `eval-530949d2` | π₀.₅ `@8e174154` | LIBERO Goal | 135 s | 10/10 | 26, verified |
+| `eval-40a88345` | MolmoAct2 `@0d24a92` | LIBERO Goal | 416 s | 10/10 | 26, verified |
+
+All three passed the same six checks as the first run (one Rollout per seed, complete
+identity, every artifact hash-verified, video present, log and config present,
+idempotent replay). The two Goal rollouts share an identical comparison identity
+(environment and task revisions, seed, harness commit, container digest, harness
+version, protocol) and both are RoboRouter executions, so the Compare page's
+matched-set rule holds for real runs: this is the M3 evidence. `matched-check.txt`
+records the check and the per-task tables.
+
+π₀.₅ on Object is this plan's original target; 9/10 over single episodes is within
+binomial noise of the upstream 100/100 on an H100 with compile enabled, and it is
+RoboRouter's own evidence rather than a fixture.
+
 ### Acceptance
 
 - Exact execution identity is on the Rollout: harness commit, LeRobot tag, container
@@ -135,14 +159,14 @@ verified Rollout. Evidence is in
 
 - 2026-10-02 — First RoboRouter-executed Rollout (MolmoAct2, LIBERO Goal, seed 7,
   10/10). π₀.₅ blocked on gated PaliGemma access; next is that run and the matched pair.
+- 2026-10-03 — π₀.₅ Object 9/10, π₀.₅ Goal 10/10, MolmoAct2 Goal 10/10; Goal pair
+  matched on identity. M0-03, M2-03 and M3-02 evidence complete.
 - 2026-10-03 — Gated access granted. First π₀.₅ attempt exposed the port-ownership
   defect (canceled, nothing recorded); second exposed the compile stall and the
   errored-episode mapping (superseded record). Both fixed; matched sequence rerun.
 
 ## Open items
 
-- Obtain gated access and run π₀.₅ on LIBERO Object (this plan's original target) and
-  on Goal for the matched pair.
 - Revise the π₀.₅ catalog entry's availability to reflect the gated base model.
 - `model-server-ready.json` and the aggregate JSON upload as `observation_trace` by
   suffix; the artifact kind vocabulary has no better fit yet.

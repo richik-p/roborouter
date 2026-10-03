@@ -1,0 +1,26 @@
+pi05-libero        RoboRouter execution   rollout=rollout-e2e2a280-d99b-416c-891e-367ff8904ce9 job=eval-530949d2-9445-49b7-9c89-4085b7209d8f success_rate=1.0 seed=7
+                   identity=vla-eval-libero-goal|vla-eval-0.4.0-lerobot-0.6.0-libero-2a4566009395|libero-goal-interaction|2026-08-20.1|7|2680ab2fafe981c2dba63c6c1a4e7bb4415dbb56|sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413|0.4.0|roborouter.seed-run.v1 episodes_per_task=1
+      ('open the middle drawer of the cabinet', 'success', 121, 26.2)
+      ('put the bowl on the stove', 'success', 86, 11.5)
+      ('put the wine bottle on top of the cabinet', 'success', 81, 11.3)
+      ('open the top drawer and put the bowl inside', 'success', 180, 20.7)
+      ('put the bowl on top of the cabinet', 'success', 83, 11.1)
+      ('push the plate to the front of the stove', 'success', 133, 16.1)
+      ('put the cream cheese in the bowl', 'success', 86, 11.3)
+      ('turn on the stove', 'success', 77, 10.3)
+      ('put the bowl on the plate', 'success', 76, 10.3)
+      ('put the wine bottle on the rack', 'success', 148, 18.2)
+molmoact2-libero   RoboRouter execution   rollout=rollout-e37e675b-fc30-4abc-9552-31a461826488 job=eval-40a88345-b94f-4f46-a977-a134c6b0fd7e success_rate=1.0 seed=7
+                   identity=vla-eval-libero-goal|vla-eval-0.4.0-lerobot-0.6.0-libero-2a4566009395|libero-goal-interaction|2026-08-20.1|7|2680ab2fafe981c2dba63c6c1a4e7bb4415dbb56|sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413|0.4.0|roborouter.seed-run.v1 episodes_per_task=1
+      ('open the middle drawer of the cabinet', 'success', 136, 30.5)
+      ('put the bowl on the stove', 'success', 79, 11.3)
+      ('put the wine bottle on top of the cabinet', 'success', 78, 11.0)
+      ('open the top drawer and put the bowl inside', 'success', 172, 18.5)
+      ('put the bowl on top of the cabinet', 'success', 133, 16.6)
+      ('push the plate to the front of the stove', 'success', 187, 20.9)
+      ('put the cream cheese in the bowl', 'success', 121, 15.2)
+      ('turn on the stove', 'success', 86, 11.7)
+      ('put the bowl on the plate', 'success', 73, 10.7)
+      ('put the wine bottle on the rack', 'success', 134, 16.9)
+
+MATCHED — both are RoboRouter executions: True

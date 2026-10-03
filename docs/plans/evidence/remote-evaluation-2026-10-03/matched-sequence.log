@@ -1,0 +1,19 @@
+=== 01:06:52 create: pi05-object ===
+=== 01:12:52 pi05-object -> SUCCEEDED (eval-c8ae9612-7b91-4cf7-a611-af9fa8c4d6da) ===
+replay: HTTP 200 '{"id":"eval-c8ae9612-7b91-4cf7-a611-af9fa8c4d6da","request":{"policy_id":"pi05-libero","policy_revision":"lerobot-pi05-libero-finetuned","environment_id":"vla-e' | before=1 rollouts/26 artifacts after=1/26
+
+CHECKS: {"one_rollout_per_seed": true, "identity_complete": true, "artifacts_verified": true, "has_video": true, "has_log_and_config": true, "replay_idempotent": true}
+ALL_PASS
+=== 01:12:53 create: pi05-goal ===
+=== 01:17:53 pi05-goal -> SUCCEEDED (eval-530949d2-9445-49b7-9c89-4085b7209d8f) ===
+replay: HTTP 200 '{"id":"eval-530949d2-9445-49b7-9c89-4085b7209d8f","request":{"policy_id":"pi05-libero","policy_revision":"lerobot-pi05-libero-finetuned","environment_id":"vla-e' | before=1 rollouts/26 artifacts after=1/26
+
+CHECKS: {"one_rollout_per_seed": true, "identity_complete": true, "artifacts_verified": true, "has_video": true, "has_log_and_config": true, "replay_idempotent": true}
+ALL_PASS
+=== 01:17:55 create: molmo-goal ===
+=== 01:27:56 molmo-goal -> SUCCEEDED (eval-40a88345-b94f-4f46-a977-a134c6b0fd7e) ===
+replay: HTTP 200 '{"id":"eval-40a88345-b94f-4f46-a977-a134c6b0fd7e","request":{"policy_id":"molmoact2-libero","policy_revision":"allenai-molmoact2-libero","environment_id":"vla-e' | before=1 rollouts/26 artifacts after=1/26
+
+CHECKS: {"one_rollout_per_seed": true, "identity_complete": true, "artifacts_verified": true, "has_video": true, "has_log_and_config": true, "replay_idempotent": true}
+ALL_PASS
+MATCHED_RUNS_DONE

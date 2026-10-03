@@ -1,0 +1,291 @@
+{
+  "benchmark": "LIBEROBenchmark_libero_goal",
+  "mode": "sync",
+  "harness_version": "0.4.0",
+  "created_at": "2026-10-03T01:27:43.479358+00:00",
+  "tasks": [
+    {
+      "task": "open the middle drawer of the cabinet",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "05d0818d-fdab-4a24-b91f-2d99de7d53ef",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 136,
+          "elapsed_sec": 30.467,
+          "name": "open the middle drawer of the cabinet",
+          "suite": "libero_goal",
+          "task_id": 0,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 136.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "open the top drawer and put the bowl inside",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "58f2594e-f44b-467b-95bd-56bf07d342f4",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 172,
+          "elapsed_sec": 18.523,
+          "name": "open the top drawer and put the bowl inside",
+          "suite": "libero_goal",
+          "task_id": 3,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 172.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "push the plate to the front of the stove",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "b2f0ce9b-9105-420d-9804-b56d951ddda4",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 187,
+          "elapsed_sec": 20.872,
+          "name": "push the plate to the front of the stove",
+          "suite": "libero_goal",
+          "task_id": 5,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 187.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the bowl on the plate",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "6502614f-926f-4600-a4ab-3d6fc5449783",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 73,
+          "elapsed_sec": 10.703,
+          "name": "put the bowl on the plate",
+          "suite": "libero_goal",
+          "task_id": 8,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 73.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the bowl on the stove",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "99ce86d4-0e10-409f-84d8-7225cafe623e",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 79,
+          "elapsed_sec": 11.256,
+          "name": "put the bowl on the stove",
+          "suite": "libero_goal",
+          "task_id": 1,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 79.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the bowl on top of the cabinet",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "28fc4ac1-bfb4-438b-aec3-b57a34790b7e",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 133,
+          "elapsed_sec": 16.571,
+          "name": "put the bowl on top of the cabinet",
+          "suite": "libero_goal",
+          "task_id": 4,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 133.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the cream cheese in the bowl",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "1cb15cf5-6ad5-42e3-a377-9efc831651ce",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 121,
+          "elapsed_sec": 15.203,
+          "name": "put the cream cheese in the bowl",
+          "suite": "libero_goal",
+          "task_id": 6,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 121.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the wine bottle on the rack",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "f12416fd-2b90-4ca1-b4e1-36aec8b3a15d",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 134,
+          "elapsed_sec": 16.871,
+          "name": "put the wine bottle on the rack",
+          "suite": "libero_goal",
+          "task_id": 9,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 134.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "put the wine bottle on top of the cabinet",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "2c8923e4-b29a-4b67-94f6-484245c824f1",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 78,
+          "elapsed_sec": 11.049,
+          "name": "put the wine bottle on top of the cabinet",
+          "suite": "libero_goal",
+          "task_id": 2,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 78.0,
+      "mean_success": 1.0
+    },
+    {
+      "task": "turn on the stove",
+      "episodes": [
+        {
+          "sid": "f367b6bf-eb58-4108-9ecd-09b25b8305c1",
+          "eid": "528f7849-2493-4b1c-bf57-8618ee5ba0a4",
+          "episode_id": 0,
+          "metrics": {
+            "success": true
+          },
+          "steps": 86,
+          "elapsed_sec": 11.72,
+          "name": "turn on the stove",
+          "suite": "libero_goal",
+          "task_id": 7,
+          "episode_idx": 0
+        }
+      ],
+      "num_episodes": 1,
+      "avg_steps": 86.0,
+      "mean_success": 1.0
+    }
+  ],
+  "config": {
+    "benchmark": "vla_eval.benchmarks.libero.benchmark:LIBEROBenchmark",
+    "mode": "sync",
+    "name": null,
+    "subname": "libero_goal",
+    "episodes_per_task": 1,
+    "max_steps": null,
+    "max_tasks": null,
+    "tasks": null,
+    "params": {
+      "num_steps_wait": 10,
+      "seed": 7,
+      "suite": "libero_goal"
+    },
+    "recording": {
+      "record_video": true
+    },
+    "hz": 10.0,
+    "throughput_mode": false,
+    "paced": true,
+    "wait_first_action": false
+  },
+  "eval_id": "a719e050-5898-4e0a-a8c7-b28b170876da-LIBEROBenchmark_libero_goal",
+  "server_info": {
+    "harness_version": "0.4.0",
+    "protocol_version": 1,
+    "model_server": "LeRobotModelServer",
+    "capabilities": {},
+    "observation_params": {
+      "send_state": true,
+      "send_wrist_image": true
+    },
+    "action_spec": {
+      "actions": {
+        "name": "raw",
+        "dims": 0,
+        "format": "raw"
+      }
+    },
+    "observation_spec": {
+      "image": {
+        "name": "image",
+        "dims": 0,
+        "format": "rgb_hwc_uint8"
+      },
+      "language": {
+        "name": "language",
+        "dims": 0,
+        "format": "language"
+      },
+      "state": {
+        "name": "raw",
+        "dims": 0,
+        "format": "raw"
+      }
+    }
+  },
+  "seed": 7,
+  "metric_keys": {
+    "success": "mean"
+  },
+  "mean_success": 1.0,
+  "num_episodes_total": 10
+}

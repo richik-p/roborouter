@@ -282,16 +282,19 @@ class HarnessAdapter:
                     duration_ms=duration_ms,
                     success=success,
                     metrics=metrics,
+                    # Same keys as the seeded upstream fixtures, so the Compare page's matched-set
+                    # identity (harness, container, vla_eval, protocol) applies to real runs too.
                     runtime_identity={
-                        "vla_eval": f"0.4.0@{HARNESS_REVISION}",
+                        "vla_eval": "0.4.0",
+                        "harness_revision": HARNESS_REVISION,
                         "lerobot": LEROBOT_REVISION,
                         "container_digest": LIBERO_IMAGE_DIGEST,
-                        "checkpoint": (
-                            f"{CHECKPOINTS[job.request.policy_id][0]}@{CHECKPOINTS[job.request.policy_id][1]}"
-                        ),
+                        "checkpoint": CHECKPOINTS[job.request.policy_id][0],
+                        "checkpoint_revision": CHECKPOINTS[job.request.policy_id][1],
+                        "benchmark": job.request.environment_id,
                         "policy_config": POLICY_CONFIGS[job.request.policy_id],
                         "environment_config": ENVIRONMENT_CONFIGS[job.request.environment_id],
-                        "episodes_per_task": str(self.episodes_per_task),
+                        "protocol": f"roborouter.seed-run.v1 episodes_per_task={self.episodes_per_task}",
                     },
                     evidence_note=(
                         "Executed by a RoboRouter remote evaluation worker: one harness run per seed "

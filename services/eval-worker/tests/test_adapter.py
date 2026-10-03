@@ -170,8 +170,11 @@ def test_map_results_emits_one_rollout_per_seed_with_duration(tmp_path: Path) ->
     assert rollouts[0].duration_ms == 1241
     assert rollouts[1].metrics["success_rate"] == 0.5
     assert "seed" not in rollouts[0].metrics
-    assert rollouts[0].runtime_identity["episodes_per_task"] == "1"
-    assert rollouts[0].runtime_identity["checkpoint"].endswith("@8e174154ef5f6c60a8da12ae99c303d8963138c1")
+    identity = rollouts[0].runtime_identity
+    assert identity["protocol"] == "roborouter.seed-run.v1 episodes_per_task=1"
+    assert identity["checkpoint_revision"] == "8e174154ef5f6c60a8da12ae99c303d8963138c1"
+    assert identity["harness_revision"] == "2680ab2fafe981c2dba63c6c1a4e7bb4415dbb56"
+    assert identity["vla_eval"] == "0.4.0" and identity["benchmark"] == "vla-eval-libero-object"
 
 
 def test_map_results_refuses_a_seed_without_results(tmp_path: Path) -> None:

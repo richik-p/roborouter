@@ -29,6 +29,10 @@ class WorkerSettings(BaseSettings):
     worker_output_root: Path = Path("artifacts/worker")
     poll_seconds: float = 5.0
     heartbeat_seconds: float = 25.0
+    # One harness run per requested seed, bounded to this many episodes per task.
+    episodes_per_task: int = 1
+    # Cold starts can include building the model server's own environment.
+    server_ready_timeout_s: float = 1800.0
 
 
 def _artifact_kind(path: Path) -> str | None:
@@ -116,7 +120,12 @@ async def work_forever(settings: WorkerSettings) -> None:
         adapters=["vla_eval_lerobot"],
         environments=["vla-eval-libero-object", "vla-eval-libero-goal"],
     )
-    adapter = HarnessAdapter(settings.vla_eval_root, settings.worker_output_root)
+    adapter = HarnessAdapter(
+        settings.vla_eval_root,
+        settings.worker_output_root,
+        episodes_per_task=settings.episodes_per_task,
+        server_ready_timeout_s=settings.server_ready_timeout_s,
+    )
     async with httpx.AsyncClient(base_url=settings.api_base_url, headers=headers, timeout=30) as client:
         response = await client.post("/private/workers/register", json=capabilities.model_dump(mode="json"))
         response.raise_for_status()

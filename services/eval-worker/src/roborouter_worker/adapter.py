@@ -5,10 +5,14 @@ import json
 import os
 import shutil
 import subprocess
+import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
+import httpx
 import yaml
 from huggingface_hub import snapshot_download
 from roborouter_contracts import EvaluationJob, Rollout
@@ -42,12 +46,24 @@ CHECKPOINTS = {
 HARNESS_REVISION = "2680ab2fafe981c2dba63c6c1a4e7bb4415dbb56"
 LEROBOT_REVISION = "v0.6.0"
 LIBERO_IMAGE_DIGEST = "sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413"
+DEFAULT_SERVER_URL = "ws://localhost:8000"
 
 
 class HarnessAdapter:
-    def __init__(self, root: Path, output_root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        output_root: Path,
+        *,
+        episodes_per_task: int = 1,
+        server_ready_timeout_s: float = 1800.0,
+    ) -> None:
         self.root = root.resolve()
         self.output_root = output_root.resolve()
+        if episodes_per_task <= 0:
+            raise ValueError("episodes_per_task must be positive")
+        self.episodes_per_task = episodes_per_task
+        self.server_ready_timeout_s = server_ready_timeout_s
 
     def validate(self, job: EvaluationJob) -> tuple[Path, Path]:
         if not self.root.exists():
@@ -94,59 +110,125 @@ class HarnessAdapter:
         materialized.write_text(yaml.safe_dump(payload, sort_keys=False))
         return materialized
 
-    def materialize_environment_config(self, source: Path, output_dir: Path) -> Path:
+    def materialize_environment_config(
+        self,
+        source: Path,
+        output_dir: Path,
+        *,
+        seed: int | None = None,
+        episodes_per_task: int | None = None,
+    ) -> Path:
+        """Pin the benchmark image by digest and bound the run to one seed.
+
+        The harness treats ``seed`` as the master seed of a run, not an episode id, so
+        one requested seed becomes one run over the suite's tasks with
+        ``episodes_per_task`` episodes each. The upstream config's 50 episodes per task
+        would otherwise run unchanged.
+        """
         payload = yaml.safe_load(source.read_text())
         image = payload.get("docker", {}).get("image")
         if not isinstance(image, str):
             raise HarnessError("LIBERO environment config has no Docker image")
         repository = image.split("@", 1)[0].removesuffix(":latest")
         payload["docker"]["image"] = f"{repository}@{LIBERO_IMAGE_DIGEST}"
-        materialized = output_dir / "roborouter-environment.yaml"
+        benchmarks = payload.get("benchmarks")
+        if (seed is not None or episodes_per_task is not None) and not isinstance(benchmarks, list):
+            raise HarnessError("environment config has no benchmarks list to bound")
+        for entry in benchmarks or []:
+            if seed is not None:
+                entry.setdefault("params", {})["seed"] = seed
+            if episodes_per_task is not None:
+                entry["episodes_per_task"] = episodes_per_task
+        suffix = "" if seed is None else f"-seed{seed}"
+        materialized = output_dir / f"roborouter-environment{suffix}.yaml"
         materialized.write_text(yaml.safe_dump(payload, sort_keys=False))
         return materialized
+
+    @staticmethod
+    def health_url(environment_config: Path) -> str:
+        payload = yaml.safe_load(environment_config.read_text()) or {}
+        url = payload.get("server", {}).get("url") or DEFAULT_SERVER_URL
+        parsed = urlparse(url)
+        scheme = "https" if parsed.scheme == "wss" else "http"
+        return f"{scheme}://{parsed.hostname or 'localhost'}:{parsed.port or 8000}/health"
+
+    async def wait_for_server(self, server: asyncio.subprocess.Process, url: str, log_path: Path) -> float:
+        """Block until the model server answers ``/health`` or exits.
+
+        The harness client does not retry a refused connection, and a cold start may
+        include building the server's own environment and downloading the checkpoint,
+        so this wait is long and bounded rather than fixed.
+        """
+        started = time.monotonic()
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            while True:
+                if server.returncode is not None:
+                    raise HarnessError(f"model server exited during startup: {_tail(log_path)}")
+                try:
+                    response = await client.get(url)
+                    if response.status_code == 200:
+                        return time.monotonic() - started
+                except httpx.HTTPError:
+                    pass
+                if time.monotonic() - started > self.server_ready_timeout_s:
+                    raise HarnessError(f"model server did not become healthy within {self.server_ready_timeout_s:.0f}s")
+                await asyncio.sleep(5)
 
     async def run(self, job: EvaluationJob) -> list[Rollout]:
         policy_source, environment_source = self.validate(job)
         output_dir = self.output_dir(job)
         output_dir.mkdir(parents=True, exist_ok=False)
         policy_path = await self.materialize_policy_config(job, policy_source, output_dir)
-        environment_path = self.materialize_environment_config(environment_source, output_dir)
+        server_log = output_dir / "model-server.log"
+        health = self.health_url(environment_source)
 
-        server = await asyncio.create_subprocess_exec(
-            "vla-eval",
-            "serve",
-            "--config",
-            str(policy_path),
-            cwd=self.root,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-        )
-        process: asyncio.subprocess.Process | None = None
-        try:
-            await asyncio.sleep(5)
-            if server.returncode is not None:
-                output = await server.stdout.read() if server.stdout else b""
-                raise HarnessError(f"model server exited during startup: {output.decode()[-2000:]}")
-            command = [
+        with server_log.open("wb") as server_out:
+            server = await asyncio.create_subprocess_exec(
                 "vla-eval",
-                "run",
+                "serve",
                 "--config",
-                str(environment_path),
-                "--output-dir",
-                str(output_dir),
-                "--yes",
-            ]
-            process = await asyncio.create_subprocess_exec(
-                *command,
+                str(policy_path),
                 cwd=self.root,
-                env={**os.environ, "ROBOROUTER_SEEDS": ",".join(map(str, job.request.seeds))},
-                stdout=asyncio.subprocess.PIPE,
+                stdout=server_out,
                 stderr=asyncio.subprocess.STDOUT,
             )
-            output, _ = await process.communicate()
-            (output_dir / "vla-eval.log").write_bytes(output)
-            if process.returncode != 0:
-                raise HarnessError(f"evaluation failed with exit {process.returncode}")
+        process: asyncio.subprocess.Process | None = None
+        runs: dict[int, tuple[Path, int]] = {}
+        try:
+            ready_s = await self.wait_for_server(server, health, server_log)
+            (output_dir / "model-server-ready.json").write_text(json.dumps({"ready_after_s": round(ready_s, 1)}))
+            for seed in job.request.seeds:
+                seed_dir = output_dir / f"seed-{seed}"
+                seed_dir.mkdir()
+                environment_path = self.materialize_environment_config(
+                    environment_source,
+                    seed_dir,
+                    seed=seed,
+                    episodes_per_task=self.episodes_per_task,
+                )
+                command = [
+                    "vla-eval",
+                    "run",
+                    "--config",
+                    str(environment_path),
+                    "--output-dir",
+                    str(seed_dir),
+                    "--yes",
+                ]
+                started = time.monotonic()
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    cwd=self.root,
+                    env={**os.environ, "ROBOROUTER_SEED": str(seed)},
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+                output, _ = await process.communicate()
+                (seed_dir / "vla-eval.log").write_bytes(output)
+                if process.returncode != 0:
+                    raise HarnessError(f"evaluation for seed {seed} failed with exit {process.returncode}")
+                runs[seed] = (seed_dir, int((time.monotonic() - started) * 1000))
+                process = None
         finally:
             if process is not None and process.returncode is None:
                 process.terminate()
@@ -161,26 +243,24 @@ class HarnessAdapter:
                 except TimeoutError:
                     server.kill()
 
-        result_files = sorted(output_dir.rglob("*.json"))
-        if not result_files:
-            raise HarnessError("evaluation produced no JSON result")
-        return self._map_results(job, result_files)
+        return self._map_results(job, runs)
 
-    def _map_results(self, job: EvaluationJob, result_files: list[Path]) -> list[Rollout]:
-        payloads = []
-        for path in result_files:
-            try:
-                payloads.append(json.loads(path.read_text()))
-            except (json.JSONDecodeError, OSError):
-                continue
-        if not payloads:
-            raise HarnessError("no readable evaluation result")
-
+    def _map_results(self, job: EvaluationJob, runs: dict[int, tuple[Path, int]]) -> list[Rollout]:
         rollouts: list[Rollout] = []
-        for index, seed in enumerate(job.request.seeds):
-            payload = payloads[min(index, len(payloads) - 1)]
-            success = bool(payload.get("success", payload.get("success_rate", 0) >= 1))
-            metrics = {key: value for key, value in payload.items() if isinstance(value, (bool, int, float))}
+        for seed in job.request.seeds:
+            seed_dir, duration_ms = runs[seed]
+            payloads = _read_json_payloads(seed_dir)
+            if not payloads:
+                raise HarnessError(f"evaluation for seed {seed} produced no readable JSON result")
+            summary = _select_summary(payloads)
+            success_rate = summary.get("success_rate")
+            success = bool(summary.get("success", isinstance(success_rate, int | float) and success_rate >= 1))
+            metrics = {
+                key: value
+                for key, value in summary.items()
+                if isinstance(value, bool | int | float) and key not in {"seed"}
+            }
+            metrics.setdefault("episodes_per_task", self.episodes_per_task)
             rollouts.append(
                 Rollout(
                     id=f"rollout-{uuid.uuid4()}",
@@ -196,7 +276,7 @@ class HarnessAdapter:
                     environment_revision=job.request.environment_revision,
                     seed=seed,
                     started_at=datetime.now(UTC),
-                    duration_ms=int(payload.get("duration_ms", 0)),
+                    duration_ms=duration_ms,
                     success=success,
                     metrics=metrics,
                     runtime_identity={
@@ -208,8 +288,49 @@ class HarnessAdapter:
                         ),
                         "policy_config": POLICY_CONFIGS[job.request.policy_id],
                         "environment_config": ENVIRONMENT_CONFIGS[job.request.environment_id],
+                        "episodes_per_task": str(self.episodes_per_task),
                     },
-                    evidence_note="Executed by a RoboRouter remote evaluation worker.",
+                    evidence_note=(
+                        "Executed by a RoboRouter remote evaluation worker: one harness run per seed "
+                        f"with {self.episodes_per_task} episode(s) per task."
+                    ),
                 )
             )
         return rollouts
+
+
+def _tail(path: Path, limit: int = 2000) -> str:
+    try:
+        return path.read_text(errors="replace")[-limit:]
+    except OSError:
+        return "<no server log>"
+
+
+def _read_json_payloads(directory: Path) -> list[dict[str, Any]]:
+    payloads: list[dict[str, Any]] = []
+    for path in sorted(directory.rglob("*.json")):
+        if path.name == "model-server-ready.json" or path.name.startswith("roborouter-"):
+            continue
+        try:
+            loaded = json.loads(path.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(loaded, dict):
+            payloads.append(loaded)
+    return payloads
+
+
+def _select_summary(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    """Pick the run summary: the first mapping, at most two levels deep, that reports a success rate."""
+    for payload in payloads:
+        if "success_rate" in payload:
+            return payload
+    for payload in payloads:
+        for value in payload.values():
+            if isinstance(value, dict) and "success_rate" in value:
+                return value
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict) and "success_rate" in item:
+                        return item
+    return payloads[0]

@@ -14,6 +14,20 @@ This is a supervised engineering smoke deployment, not a public beta. The app ho
 password-protected, the worker host exposes no RoboRouter inbound port, and the
 artifact bucket remains private.
 
+## Single-box variant (first run, 2026-10-02)
+
+The first real run used one GPU host for everything, with no DNS, TLS, or public
+ports: API on `127.0.0.1:8800` (the harness's model server owns 8000), PostgreSQL
+and the S3 store in Docker on loopback, and the worker on the same host pointed at
+`http://127.0.0.1:8800`. Phases 2 and 3 below apply unchanged. Two things learned:
+
+- **π₀.₅ needs gated access.** LeRobot's π₀.₅ loads `google/paligemma-3b-pt-224`,
+  which is gated. Accept the terms with the Hugging Face account that will run the
+  worker, create a read token, and export it as `HF_TOKEN` in the worker's
+  environment. Without it the model server exits at load.
+- **Worker knobs.** `EPISODES_PER_TASK` (default 1) bounds each seed's run;
+  `SERVER_READY_TIMEOUT_S` (default 1800) bounds the cold-start wait.
+
 ## Required inputs
 
 Prepare these values before provisioning:

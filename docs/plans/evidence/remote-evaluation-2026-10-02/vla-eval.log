@@ -1,0 +1,84 @@
+2026-10-03 00:25:11 INFO     vla_eval.cli.main: Running via Docker: /usr/bin/docker run --rm --name vla-eval-81190 --network host -v /home/ec2-user/trackb/worker-artifacts/eval-be4fd05b-e857-4b6a-a956-1ffbdf6b1e2b/seed-7:/workspace/results -v /tmp/vla-eval-docker-75mvjds2.yaml:/tmp/eval_config.yaml:ro -e VLA_EVAL_HOST_OUTPUT_DIR=/home/ec2-user/trackb/worker-artifacts/eval-be4fd05b-e857-4b6a-a956-1ffbdf6b1e2b/seed-7 --gpus all ghcr.io/allenai/vla-evaluation-harness/libero@sha256:2a4566009395888ae3904bde87cffceea7526e2e0f0667b933cae0e8e6134413 run --no-docker --config /tmp/eval_config.yaml
+2026-10-03 00:25:16 INFO     vla_eval.watchdog: Progress watchdog armed: 1200s stall timeout.
+2026-10-03 00:25:16 INFO     vla_eval.orchestrator: Starting benchmark: LIBEROBenchmark_libero_goal (mode=sync)
+2026-10-03 00:25:16 INFO     vla_eval.connection: Connected to ws://localhost:8000 (attempt 1/5)
+2026-10-03 00:25:16 INFO     vla_eval.orchestrator: Auto-configured from model server: send_state=True
+2026-10-03 00:25:16 INFO     vla_eval.orchestrator: Auto-configured from model server: send_wrist_image=True
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: action: no overlapping keys between server and benchmark specs
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: action [position]: benchmark expects it but server doesn't declare it
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: action [rotation]: benchmark expects it but server doesn't declare it
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: action [gripper]: benchmark expects it but server doesn't declare it
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: observation [image]: server expects it but benchmark doesn't provide it
+2026-10-03 00:25:16 WARNING  vla_eval.orchestrator: Spec mismatch: observation [state]: state: eef_pos3_axisangle3_gripper2 vs raw
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+2026-10-03 00:25:21 WARNING  robosuite_logs: No private macro file found!
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+2026-10-03 00:25:21 WARNING  robosuite_logs: It is recommended to use a private macro file
+[robosuite WARNING] To setup, run: python /opt/conda/envs/libero/lib/python3.8/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+2026-10-03 00:25:21 WARNING  robosuite_logs: To setup, run: python /opt/conda/envs/libero/lib/python3.8/site-packages/robosuite/scripts/setup_macros.py
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+2026-10-03 00:25:51 INFO     vla_eval.orchestrator:   [1/10] open the middle drawer of the cabinet ep0: SUCCESS (steps=130)
+2026-10-03 00:25:51 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0000_ep0000_success.mp4 (131 frames)
+2026-10-03 00:26:02 INFO     vla_eval.orchestrator:   [2/10] put the bowl on the stove ep0: SUCCESS (steps=80)
+2026-10-03 00:26:02 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0001_ep0000_success.mp4 (81 frames)
+2026-10-03 00:26:13 INFO     vla_eval.orchestrator:   [3/10] put the wine bottle on top of the cabinet ep0: SUCCESS (steps=77)
+2026-10-03 00:26:13 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0002_ep0000_success.mp4 (78 frames)
+2026-10-03 00:26:32 INFO     vla_eval.orchestrator:   [4/10] open the top drawer and put the bowl inside ep0: SUCCESS (steps=178)
+2026-10-03 00:26:32 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0003_ep0000_success.mp4 (179 frames)
+2026-10-03 00:26:43 INFO     vla_eval.orchestrator:   [5/10] put the bowl on top of the cabinet ep0: SUCCESS (steps=80)
+2026-10-03 00:26:44 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0004_ep0000_success.mp4 (81 frames)
+2026-10-03 00:27:00 INFO     vla_eval.orchestrator:   [6/10] push the plate to the front of the stove ep0: SUCCESS (steps=138)
+2026-10-03 00:27:00 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0005_ep0000_success.mp4 (139 frames)
+2026-10-03 00:27:18 INFO     vla_eval.orchestrator:   [7/10] put the cream cheese in the bowl ep0: SUCCESS (steps=158)
+2026-10-03 00:27:18 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0006_ep0000_success.mp4 (159 frames)
+2026-10-03 00:27:30 INFO     vla_eval.orchestrator:   [8/10] turn on the stove ep0: SUCCESS (steps=82)
+2026-10-03 00:27:30 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0007_ep0000_success.mp4 (83 frames)
+2026-10-03 00:27:41 INFO     vla_eval.orchestrator:   [9/10] put the bowl on the plate ep0: SUCCESS (steps=75)
+2026-10-03 00:27:41 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0008_ep0000_success.mp4 (76 frames)
+2026-10-03 00:27:57 INFO     vla_eval.orchestrator:   [10/10] put the wine bottle on the rack ep0: SUCCESS (steps=131)
+2026-10-03 00:27:57 INFO     vla_eval.benchmarks.video: Saved episode video: /workspace/results/episodes/LIBEROBenchmark_libero_goal/task0009_ep0000_success.mp4 (132 frames)
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+[Warning]: datasets path /app/libero/libero/datasets does not exist!
+
+============================================================
+Benchmark: LIBEROBenchmark_libero_goal (mode: sync)
+============================================================
+  open the middle drawer of the cabinet    100.0% (1/1)
+  put the bowl on the stove                100.0% (1/1)
+  put the wine bottle on top of the cabinet 100.0% (1/1)
+  open the top drawer and put the bowl inside 100.0% (1/1)
+  put the bowl on top of the cabinet       100.0% (1/1)
+  push the plate to the front of the stove 100.0% (1/1)
+  put the cream cheese in the bowl         100.0% (1/1)
+  turn on the stove                        100.0% (1/1)
+  put the bowl on the plate                100.0% (1/1)
+  put the wine bottle on the rack          100.0% (1/1)
+────────────────────────────────────────────────────────────
+  Overall                                  100.0%
+============================================================
+
+2026-10-03 00:27:57 INFO     vla_eval.results.merge: Wrote aggregate: /workspace/results/LIBEROBenchmark_libero_goal_aggregate.json (10 episodes)
+
+LIBEROBenchmark_libero_goal: 100.0%

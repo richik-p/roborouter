@@ -48,7 +48,15 @@ GPU_NAME=NVIDIA-H100-80GB-HBM3
 VRAM_GB=80
 VLA_EVAL_ROOT=vendor/vla-evaluation-harness
 WORKER_OUTPUT_ROOT=artifacts/worker
+EPISODES_PER_TASK=1
+SERVER_READY_TIMEOUT_S=1800
 ```
+
+Each requested seed becomes one harness run with `EPISODES_PER_TASK` episodes per
+task, recorded with video, and mapped to one Rollout. The adapter polls the model
+server's `/health` for up to `SERVER_READY_TIMEOUT_S` before launching the benchmark.
+π₀.₅ checkpoints need `HF_TOKEN` from an account with access to the gated
+`google/paligemma-3b-pt-224` base model.
 
 Rotate without transferring active leases:
 
